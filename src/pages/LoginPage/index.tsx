@@ -4,15 +4,17 @@ import { MdVisibility, MdVisibilityOff, MdLanguage, MdWbSunny, MdNightlight } fr
 import styles from './styles.module.css';
 import loginPattern from '../../assets/login-pattern.jpg';
 import ludenLogo from '../../assets/luden-logo.svg';
-import UserService from '../../services/UserService.ts';
+import { useLoginMutation, useRegisterMutation } from '@features/auth';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '@shared/lib';
+import { useTheme } from '@app/providers';
 
 export const LoginPage = () => {
     const navigate = useNavigate();
     const { t, setLanguage, language } = useTranslation();
     const { isDarkMode, toggleDarkMode } = useTheme();
+    const [login] = useLoginMutation();
+    const [register] = useRegisterMutation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -30,9 +32,23 @@ export const LoginPage = () => {
     };
 
     const handleSuccessfulLogin = (token: string) => {
-        localStorage.setItem('authToken', token);
-        setMessage(t('login.loginSuccess'));
-        setTimeout(() => navigate('/profile'), 500);
+        if (!token) {
+            console.error('handleSuccessfulLogin called with empty token');
+            handleFailedLogin(new Error('Token is empty'));
+            return;
+        }
+        
+        try {
+            localStorage.setItem('authToken', token);
+            setMessage(t('login.loginSuccess'));
+            // Используем requestAnimationFrame для гарантии обновления UI перед редиректом
+            requestAnimationFrame(() => {
+                setTimeout(() => navigate('/profile'), 500);
+            });
+        } catch (error) {
+            console.error('Failed to save token or navigate:', error);
+            handleFailedLogin(new Error('Failed to complete login process'));
+        }
     };
 
     const handleFailedLogin = (error: any) => {
@@ -50,13 +66,13 @@ export const LoginPage = () => {
         }
 
         try {
-            const result = await UserService.login({ email, password });
+            const result = await login({ email, password }).unwrap();
             if (result?.token) {
                 handleSuccessfulLogin(result.token);
             } else {
                 handleFailedLogin(new Error('Server did not return a token.'));
             }
-        } catch (error) {
+        } catch (error: any) {
             handleFailedLogin(error);
         }
     };
@@ -72,20 +88,40 @@ export const LoginPage = () => {
         const googleToken = response.credential;
 
         try {
-            const loginResult = await UserService.login({ googleJwtToken: googleToken });
-            if (loginResult?.token) {
-                handleSuccessfulLogin(loginResult.token);
+            const loginResult = await login({ googleJwtToken: googleToken }).unwrap();
+            
+            // Обрабатываем разные варианты структуры ответа
+            const token = loginResult?.token || (loginResult as any)?.data?.token;
+            
+            if (token) {
+                handleSuccessfulLogin(token);
                 return;
+            } else {
+                // Если токен не найден, но ответ успешный, логируем для отладки
+                console.warn('Login successful but no token found:', loginResult);
+                handleFailedLogin(new Error('Server did not return a token.'));
             }
         } catch (loginError: any) {
-            if (loginError.message?.includes('UnregisteredGoogle') || loginError.response?.status === 404 || loginError.response?.status === 401) {
+            if (loginError.data?.message?.includes('UnregisteredGoogle') || loginError.status === 404 || loginError.status === 401) {
                 setMessage(t('login.accountNotFound'));
                 try {
-                    await UserService.register({ googleJwtToken: googleToken });
+                    const registerResult = await register({ googleJwtToken: googleToken }).unwrap();
+                    
+                    // Проверяем, вернул ли регистрация токен
+                    const registerToken = registerResult?.token || (registerResult as any)?.data?.token;
+                    if (registerToken) {
+                        handleSuccessfulLogin(registerToken);
+                        return;
+                    }
+                    
+                    // Если регистрация не вернула токен, пытаемся залогиниться
                     setMessage(t('login.accountCreated'));
-                    const postRegisterLoginResult = await UserService.login({ googleJwtToken: googleToken });
-                    if (postRegisterLoginResult?.token) {
-                        handleSuccessfulLogin(postRegisterLoginResult.token);
+                    const postRegisterLoginResult = await login({ googleJwtToken: googleToken }).unwrap();
+                    const postLoginToken = postRegisterLoginResult?.token || (postRegisterLoginResult as any)?.data?.token;
+                    if (postLoginToken) {
+                        handleSuccessfulLogin(postLoginToken);
+                    } else {
+                        handleFailedLogin(new Error('Could not log in after registration.'));
                     }
                 } catch (registrationError) {
                     handleFailedLogin(registrationError);

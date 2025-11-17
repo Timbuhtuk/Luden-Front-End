@@ -1,1 +1,0 @@
-export const baseDomain = "https://Localhost:5195/api/";

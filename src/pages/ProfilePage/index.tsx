@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import styles from './styles.module.css';
 import { usePalette } from 'color-thief-react';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useTranslation } from '@shared/lib';
 import {
     MdArrowBack,
     MdOutlineNotifications,
@@ -16,38 +16,110 @@ import {
     MdAdd,
     MdCardGiftcard,
     MdEmojiEvents,
+    MdLanguage,
+    MdWbSunny,
+    MdNightlight,
 } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import { getTextColor } from '../../utils/colorUtils';
-import type { Bill, Product } from '../../models/Bill.ts';
-import type { User } from '../../models/User.ts';
-import type { Bonus } from '../../models/Bonus.ts';
-import type { Game } from '../../models/Game.ts';
-import UserService from '../../services/UserService';
-import BillService from '../../services/BillService';
-import { BillCard } from '../../components/BillCard';
-import { ProductCard } from '../../components/ProductCard';
-import { useTheme } from '../../context';
+import { getTextColor } from '@shared/lib/color-utils';
+import type { BillDto, ProductDto } from '@shared/types';
+import type { Game } from '@shared/types';
+import { useGetUserProfileQuery, useGetUserBillsQuery, useGetUserProductsQuery, useUpdateUserMutation } from '@entities/User';
+import { useLoginMutation } from '@features/auth';
+import { BillCard, ProductCard, GameCard } from '@shared/ui';
+import { useRemoveFavoriteMutation } from '@entities/Favorite';
+import { useTheme } from '@app/providers';
+import { useGetFavoritesQuery } from '@entities/Favorite';
+import { API_BASE_URL, API_ENDPOINTS } from '@shared/config';
+import { getGamePlaceholder } from '@shared/lib/image-placeholder';
+
+// Функция для получения URL изображения продукта
+const getProductImageUrl = (product: ProductDto | null | undefined): string => {
+    if (!product) {
+        return getGamePlaceholder('Product', false);
+    }
+    
+    // Приоритет 1: coverUrl из продукта
+    if (product.coverUrl) {
+        return product.coverUrl;
+    }
+    
+    // Приоритет 2: url из файлов
+    if (product.files && product.files.length > 0) {
+        // Ищем файл с изображением, у которого есть url
+        const imageFile = product.files.find((f) => 
+            f?.url && (f?.fileType === 'Image' || f?.mimeType?.startsWith('image/'))
+        ) || product.files.find((f) => f?.url);
+        
+        if (imageFile?.url) {
+            return imageFile.url;
+        }
+        
+        // Если нет url, но есть id, используем blob API
+        const fileWithId = product.files.find((f) => 
+            f?.fileType === 'Image' || f?.mimeType?.startsWith('image/')
+        ) || product.files[0];
+        
+        if (fileWithId?.id) {
+            const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+            return `${baseUrl}${API_ENDPOINTS.blob.image(fileWithId.id)}`;
+        }
+    }
+    
+    // Fallback на красивый плейсхолдер
+    return getGamePlaceholder(product.name || 'Product', false);
+};
 
 export const ProfilePage = () => {
-    const { t } = useTranslation(); // ← ДОДАНО
-    const [user, setUser] = useState<User | null>(null);
-    const [bills, setBills] = useState<Bill[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [bonuses] = useState<Bonus[]>([]);
-    const [favorites] = useState<Game[]>([]);
+    const { t, setLanguage, language } = useTranslation();
+    const navigate = useNavigate();
+    const { isDarkMode, toggleDarkMode } = useTheme();
+    const { data: profileData, refetch: refetchProfile } = useGetUserProfileQuery();
+    const { data: billsData, isLoading: isLoadingBills } = useGetUserBillsQuery();
+    const { data: productsData, isLoading: isLoadingProducts } = useGetUserProductsQuery();
+    const { data: favoritesData, isLoading: isLoadingFavorites } = useGetFavoritesQuery();
+    const [updateUser] = useUpdateUserMutation();
+    const [login] = useLoginMutation();
+    const [removeFavorite] = useRemoveFavoriteMutation();
+    
+    const [user, setUser] = useState<{ username: string; email: string; role: string; avatar: string } | null>(null);
+    const [bills, setBills] = useState<BillDto[]>([]);
+    const [products, setProducts] = useState<ProductDto[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSwitchAccountOpen, setIsSwitchAccountOpen] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
     const switchAccountRef = useRef<HTMLDivElement>(null);
-    const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('myLibrary'); // ← Змінено ключ
+    const [activeTab, setActiveTab] = useState('myLibrary');
 
     const [avatarUrl, setAvatarUrl] = useState<string>('');
     const [avatarVersion, setAvatarVersion] = useState<number>(0);
     const [palette, setPalette] = useState<string[] | null>(null);
-    const { isDarkMode } = useTheme();
+
+    // === Оновлюємо дані з RTK Query ===
+    useEffect(() => {
+        if (profileData) {
+            setUser({
+                username: profileData.username || '',
+                email: profileData.email || '',
+                role: profileData.role || 'user',
+                avatar: profileData.avatarUrl || '',
+            });
+            setAvatarUrl(profileData.avatarUrl || '');
+        }
+    }, [profileData]);
+
+    useEffect(() => {
+        if (billsData) {
+            setBills(billsData);
+        }
+    }, [billsData]);
+
+    useEffect(() => {
+        if (productsData) {
+            setProducts(productsData);
+        }
+    }, [productsData]);
 
     // === Оновлюємо URL + версію ===
     useEffect(() => {
@@ -93,75 +165,49 @@ export const ProfilePage = () => {
     const textColor = getTextColor(dominantColor);
 
     // === Завантаження ===
-    const fetchUserData = async () => {
-        try {
-            const profileData = await UserService.getProfile();
-            if (profileData) {
-                setUser({
-                    id: 0,
-                    username: profileData.username,
-                    password_hash: '',
-                    created_at: new Date(profileData.createdAt),
-                    updated_at: profileData.updatedAt ? new Date(profileData.updatedAt) : undefined,
-                    email: profileData.email,
-                    role: profileData.role as 'user' | 'admin' | 'moderator',
-                    avatar: profileData.avatarUrl || '',
-                });
-                setBills(profileData.bills || []);
-                setProducts(profileData.products || []);
-            } else {
-                navigate('/');
-            }
-        } catch (error) {
-            console.error('Error fetching user data:', error);
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
             navigate('/');
         }
-    };
-
-    const fetchUserBills = async () => {
-        try {
-            const billsData = await BillService.getUserBills();
-            if (billsData) {
-                setBills(billsData);
-            }
-        } catch (error) {
-            console.error('Error fetching bills:', error);
-        }
-    };
+    }, [navigate]);
 
     // === Оновлення аватарки ===
     const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file && user) {
             try {
-                const result = await UserService.updateUser({ avatar: file });
-                if (result && result.avatarUrl) {
-                    const newUrl = `${result.avatarUrl}?t=${Date.now()}`;
+                const formData = new FormData();
+                formData.append('Avatar', file);
+                const result = await updateUser(formData).unwrap();
+                if (result && (result as any).avatarUrl) {
+                    const newUrl = `${(result as any).avatarUrl}?t=${Date.now()}`;
                     setUser(prev => prev ? { ...prev, avatar: newUrl } : null);
                     setAvatarVersion(prev => prev + 1);
-                    alert(t('profile.avatarUploaded')); // ← ПЕРЕКЛАД
+                    refetchProfile();
+                    alert(t('profile.avatarUploaded'));
                 }
             } catch (error) {
                 console.error('Error uploading avatar:', error);
-                alert(t('profile.avatarUploadFailed')); // ← ПЕРЕКЛАД
+                alert(t('profile.avatarUploadFailed'));
             }
         }
     };
 
     const handleSwitchAccount = async (email: string, password: string) => {
         try {
-            const result = await UserService.login({ email, password });
+            const result = await login({ email, password }).unwrap();
             if (result?.token) {
-                localStorage.setItem('auth user', result.token);
-                await fetchUserData();
+                localStorage.setItem('authToken', result.token);
+                refetchProfile();
                 setIsSwitchAccountOpen(false);
-                alert(t('profile.switchedToAccount', { email })); // ← ПЕРЕКЛАД + ПАРАМЕТР
+                alert(t('profile.switchedToAccount', { email }));
             } else {
-                alert(t('profile.switchAccountFailed')); // ← ПЕРЕКЛАД
+                alert(t('profile.switchAccountFailed'));
             }
         } catch (error) {
             console.error('Error switching account:', error);
-            alert(t('profile.switchAccountError')); // ← ПЕРЕКЛАД
+            alert(t('profile.switchAccountError'));
         }
     };
 
@@ -198,15 +244,6 @@ export const ProfilePage = () => {
         navigate('/');
     };
 
-    useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            fetchUserData();
-            fetchUserBills();
-        } else {
-            navigate('/');
-        }
-    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -249,7 +286,29 @@ export const ProfilePage = () => {
                     <MdArrowBack /> {t('backToStore')} {/* ← ПЕРЕКЛАД */}
                 </button>
                 <div className={styles.headerIcons}>
+                    <button 
+                        className={styles.headerButton}
+                        onClick={() => setLanguage(language === 'en' ? 'uk' : 'en')}
+                        aria-label={t('aria.toggleLanguage')}
+                    >
+                        <MdLanguage />
+                    </button>
+                    <button
+                        className={styles.headerButton}
+                        onClick={toggleDarkMode}
+                        aria-label={t('aria.toggleTheme')}
+                    >
+                        {isDarkMode ? <MdWbSunny /> : <MdNightlight />}
+                    </button>
                     <button className={styles.headerButton}><MdOutlineNotifications /></button>
+                    {profileData?.bonusPoints !== undefined && (
+                        <div className={styles.bonusInfo}>
+                            <MdEmojiEvents className={styles.bonusInfoIcon} />
+                            <span className={styles.bonusInfoText}>
+                                {Math.floor(profileData.bonusPoints).toLocaleString()} {t('profile.bonuses') || 'бонусів'}
+                            </span>
+                        </div>
+                    )}
                     <div className={styles.settingsDropdown} ref={settingsRef}>
                         <button className={styles.headerButton} onClick={handleSettingsToggle}>
                             <MdOutlineSettings />
@@ -316,12 +375,6 @@ export const ProfilePage = () => {
                         <MdSportsEsports /> {t('profile.myLibrary')} {/* ← ПЕРЕКЛАД */}
                     </button>
                     <button
-                        className={`${styles.navButton} ${activeTab === 'bonuses' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('bonuses')}
-                    >
-                        <MdEmojiEvents /> {t('profile.bonuses')} {/* ← ПЕРЕКЛАД */}
-                    </button>
-                    <button
                         className={`${styles.navButton} ${activeTab === 'bills' ? styles.active : ''}`}
                         onClick={() => setActiveTab('bills')}
                     >
@@ -338,7 +391,12 @@ export const ProfilePage = () => {
                 <div className={styles.contentArea}>
                     {activeTab === 'myLibrary' && (
                         <div className={styles.gameGrid}>
-                            {products.length === 0 ? (
+                            {isLoadingProducts ? (
+                                <div className={styles.emptyState}>
+                                    <MdSportsEsports className={styles.emptyIcon} />
+                                    <p>{t('loading') || 'Loading...'}</p>
+                                </div>
+                            ) : products.length === 0 ? (
                                 <div className={styles.emptyState}>
                                     <MdSportsEsports className={styles.emptyIcon} />
                                     <p>{t('profile.noGamesInLibrary')}</p>
@@ -351,27 +409,14 @@ export const ProfilePage = () => {
                             )}
                         </div>
                     )}
-                    {activeTab === 'bonuses' && (
-                        <div className={styles.bonusList}>
-                            {bonuses.length === 0 ? (
-                                <div className={styles.emptyState}>
-                                    <MdEmojiEvents className={styles.emptyIcon} />
-                                    <p>{t('profile.noBonuses')}</p>
-                                    <p className={styles.emptyHint}>{t('profile.completeAchievements')}</p>
-                                </div>
-                            ) : (
-                                bonuses.map((bonus) => (
-                                    <div key={bonus.id} className={styles.bonusItem}>
-                                        <span className={styles.bonusName}>{bonus.name}</span>
-                                        <span className={styles.bonusDescription}>{bonus.description}</span>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    )}
                     {activeTab === 'bills' && (
                         <div className={styles.gameGrid}>
-                            {bills.length === 0 ? (
+                            {isLoadingBills ? (
+                                <div className={styles.emptyState}>
+                                    <MdCardGiftcard className={styles.emptyIcon} />
+                                    <p>{t('loading') || 'Loading...'}</p>
+                                </div>
+                            ) : bills.length === 0 ? (
                                 <div className={styles.emptyState}>
                                     <MdCardGiftcard className={styles.emptyIcon} />
                                     <p>{t('profile.noBills')}</p>
@@ -386,22 +431,47 @@ export const ProfilePage = () => {
                     )}
                     {activeTab === 'favorites' && (
                         <div className={styles.gameGrid}>
-                            {favorites.length === 0 ? (
+                            {isLoadingFavorites ? (
+                                <div className={styles.emptyState}>
+                                    <MdStar className={styles.emptyIcon} />
+                                    <p>{t('loading') || 'Loading...'}</p>
+                                </div>
+                            ) : !favoritesData || favoritesData.length === 0 ? (
                                 <div className={styles.emptyState}>
                                     <MdStar className={styles.emptyIcon} />
                                     <p>{t('profile.noFavorites')}</p>
                                     <p className={styles.emptyHint}>{t('profile.addToFavorites')}</p>
                                 </div>
                             ) : (
-                                favorites.map((game) => (
-                                    <div key={game.id} className={styles.gameCard}>
-                                        <img src={game.image} alt={game.title} />
-                                        <div className={styles.gameInfo}>
-                                            <h3>{game.title}</h3>
-                                            <p>{game.price}</p>
-                                        </div>
-                                    </div>
-                                ))
+                                favoritesData
+                                    .filter(fav => fav.product) // Фильтруем только те, у которых есть продукт
+                                    .map((fav) => {
+                                        const product = fav.product!;
+                                        const game: Game = {
+                                            id: product.id,
+                                            title: product.name || 'Untitled',
+                                            image: getProductImageUrl(product),
+                                            price: `${product.price.toLocaleString()} €`,
+                                            genre: product.region?.name || undefined,
+                                            isFavorite: true,
+                                            discountPercent: null,
+                                        };
+                                        return (
+                                            <GameCard
+                                                key={game.id}
+                                                game={game}
+                                                isDarkMode={isDarkMode}
+                                                noHover={true}
+                                                onToggleFavorite={async (gameId) => {
+                                                    try {
+                                                        await removeFavorite(gameId).unwrap();
+                                                    } catch (error) {
+                                                        console.error('Error removing favorite:', error);
+                                                    }
+                                                }}
+                                            />
+                                        );
+                                    })
                             )}
                         </div>
                     )}

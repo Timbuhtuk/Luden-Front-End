@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePalette } from 'color-thief-react';
 import { MdArrowBack, MdPhotoCamera, MdSave } from 'react-icons/md';
-import { getTextColor } from '../../utils/colorUtils';
-import UserService from '../../services/UserService';
+import { getTextColor } from '@shared/lib/color-utils';
+import { useGetUserProfileQuery, useUpdateUserMutation } from '@entities/User';
 import styles from './styles.module.css';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '@app/providers';
 
 interface User {
     username: string;
@@ -18,13 +18,14 @@ interface User {
 
 export const EditProfilePage = () => {
     const { isDarkMode } = useTheme();
+    const navigate = useNavigate();
+    const { data: profileData, isLoading } = useGetUserProfileQuery();
+    const [updateUser] = useUpdateUserMutation();
     const [user, setUser] = useState<User | null>(null);
     const [avatar, setAvatar] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const navigate = useNavigate();
 
     const { data: colorPalette } = usePalette(avatar || '', 2, 'hex', {
         crossOrigin: 'Anonymous',
@@ -52,19 +53,16 @@ export const EditProfilePage = () => {
 
         setSaving(true);
         try {
-            const updateData: { username?: string; email?: string; avatar?: File } = {};
+            const formData = new FormData();
+            if (user.username) formData.append('Username', user.username);
+            if (user.email) formData.append('Email', user.email);
+            if (avatarFile) formData.append('Avatar', avatarFile);
 
-            if (user.username) updateData.username = user.username;
-            if (user.email) updateData.email = user.email;
-            if (avatarFile) updateData.avatar = avatarFile;
-
-            const result = await UserService.updateUser(updateData);
-            if (result) {
-                alert('Profile updated successfully');
-            }
+            await updateUser(formData).unwrap();
+            alert('Profile updated successfully');
             navigate('/profile');
         } catch (error: any) {
-            alert('Error: ' + (error.message || 'Failed to update profile'));
+            alert('Error: ' + (error.data?.message || error.message || 'Failed to update profile'));
         } finally {
             setSaving(false);
         }
@@ -75,35 +73,30 @@ export const EditProfilePage = () => {
     };
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const profileData = await UserService.getProfile();
-                if (profileData) {
-                    setUser({
-                        username: profileData.username,
-                        email: profileData.email,
-                        role: profileData.role,
-                        createdAt: profileData.createdAt,
-                        updatedAt: profileData.updatedAt,
-                        avatarUrl: profileData.avatarUrl,
-                    });
+        if (profileData) {
+            setUser({
+                username: profileData.username || '',
+                email: profileData.email || '',
+                role: profileData.role || 'user',
+                createdAt: profileData.createdAt,
+                updatedAt: profileData.updatedAt,
+                avatarUrl: profileData.avatarUrl,
+            });
 
-                    if (profileData.avatarUrl) {
-                        setAvatar(profileData.avatarUrl);
-                    }
-                }
-            } catch (error: any) {
-                alert('Error loading profile: ' + (error.message || 'Unknown error'));
-                navigate('/login');
-            } finally {
-                setLoading(false);
+            if (profileData.avatarUrl) {
+                setAvatar(profileData.avatarUrl);
             }
-        };
+        }
+    }, [profileData]);
 
-        fetchUserData();
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            navigate('/');
+        }
     }, [navigate]);
 
-    if (loading || !user) {
+    if (isLoading || !user) {
         return <div className={styles.loading}>Loading...</div>;
     }
 

@@ -4,15 +4,17 @@ import { MdVisibility, MdVisibilityOff, MdLanguage, MdWbSunny, MdNightlight } fr
 import styles from './styles.module.css';
 import loginPattern from '../../assets/login-pattern.jpg';
 import ludenLogo from '../../assets/luden-logo.svg';
-import UserService from '../../services/UserService';
+import { useRegisterMutation, useLoginMutation } from '@features/auth';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '@shared/lib';
+import { useTheme } from '@app/providers';
 
 export const RegistrationPage = () => {
     const navigate = useNavigate();
     const { t, setLanguage, language } = useTranslation();
     const { isDarkMode, toggleDarkMode } = useTheme();
+    const [register] = useRegisterMutation();
+    const [login] = useLoginMutation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -26,9 +28,23 @@ export const RegistrationPage = () => {
     };
 
     const handleSuccessfulLogin = (token: string) => {
-        localStorage.setItem('authToken', token);
-        setMessage(t('registration.registrationSuccess'));
-        setTimeout(() => navigate('/profile'), 500);
+        if (!token) {
+            console.error('handleSuccessfulLogin called with empty token');
+            handleFailedLogin(new Error('Token is empty'));
+            return;
+        }
+        
+        try {
+            localStorage.setItem('authToken', token);
+            setMessage(t('registration.registrationSuccess'));
+            // Используем requestAnimationFrame для гарантии обновления UI перед редиректом
+            requestAnimationFrame(() => {
+                setTimeout(() => navigate('/profile'), 500);
+            });
+        } catch (error) {
+            console.error('Failed to save token or navigate:', error);
+            handleFailedLogin(new Error('Failed to complete registration process'));
+        }
     };
 
     const handleFailedLogin = (error: any) => {
@@ -51,10 +67,10 @@ export const RegistrationPage = () => {
 
         try {
             setMessage(t('registration.registering'));
-            await UserService.register({ email, password });
+            await register({ email, password }).unwrap();
             setMessage(t('registration.registrationComplete'));
 
-            const loginResult = await UserService.login({ email, password });
+            const loginResult = await login({ email, password }).unwrap();
             if (loginResult?.token) {
                 handleSuccessfulLogin(loginResult.token);
             } else {
@@ -62,10 +78,10 @@ export const RegistrationPage = () => {
                 setTimeout(() => navigate('/'), 2000);
             }
         } catch (regError: any) {
-            if (regError.message?.includes('EmailBusy') || regError.response?.status === 400) {
+            if (regError.data?.message?.includes('EmailBusy') || regError.status === 400) {
                 setMessage(t('registration.emailRegistered'));
                 try {
-                    const loginResult = await UserService.login({ email, password });
+                    const loginResult = await login({ email, password }).unwrap();
                     if (loginResult?.token) {
                         handleSuccessfulLogin(loginResult.token);
                     }
@@ -88,25 +104,37 @@ export const RegistrationPage = () => {
 
         try {
             setMessage(t('registration.creatingAccount'));
-            const registrationResult = await UserService.register({ googleJwtToken: response.credential });
-            if (registrationResult?.token) {
-                handleSuccessfulLogin(registrationResult.token);
+            const registrationResult = await register({ googleJwtToken: response.credential }).unwrap();
+            
+            // Обрабатываем разные варианты структуры ответа
+            const registerToken = registrationResult?.token || (registrationResult as any)?.data?.token;
+            
+            if (registerToken) {
+                handleSuccessfulLogin(registerToken);
+                return;
+            }
+            
+            // Если регистрация не вернула токен, пытаемся залогиниться
+            setMessage(t('registration.registrationComplete'));
+            const loginResult = await login({ googleJwtToken: response.credential }).unwrap();
+            const loginToken = loginResult?.token || (loginResult as any)?.data?.token;
+            
+            if (loginToken) {
+                handleSuccessfulLogin(loginToken);
             } else {
-                setMessage(t('registration.registrationComplete'));
-                const loginResult = await UserService.login({ googleJwtToken: response.credential });
-                if (loginResult?.token) {
-                    handleSuccessfulLogin(loginResult.token);
-                } else {
-                    handleFailedLogin(new Error('Could not log in after registration.'));
-                }
+                handleFailedLogin(new Error('Could not log in after registration.'));
             }
         } catch (regError: any) {
-            if (regError.message?.includes('EmailBusy') || regError.response?.status === 400) {
+            if (regError.data?.message?.includes('EmailBusy') || regError.status === 400) {
                 setMessage(t('registration.accountExists'));
                 try {
-                    const loginResult = await UserService.login({ googleJwtToken: response.credential });
-                    if (loginResult?.token) {
-                        handleSuccessfulLogin(loginResult.token);
+                    const loginResult = await login({ googleJwtToken: response.credential }).unwrap();
+                    const loginToken = loginResult?.token || (loginResult as any)?.data?.token;
+                    
+                    if (loginToken) {
+                        handleSuccessfulLogin(loginToken);
+                    } else {
+                        handleFailedLogin(new Error('Could not log in with existing account.'));
                     }
                 } catch (loginError) {
                     handleFailedLogin(loginError);
