@@ -1,0 +1,191 @@
+/* SaleCard — акционная карточка */
+.saleCard {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+    cursor: pointer;
+    background: #fff;
+    width: 100%;
+    border: 2px solid #B93838;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+}
+
+.saleCard.dark {
+    background: #1e1e1e !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    border-color: #B93838;
+}
+
+.saleCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(185, 56, 56, 0.25);
+}
+
+/* Общий обёртчик изображения */
+.gameImageWrapper {
+    position: relative;
+    height: 280px;
+    background: #f4f4f4;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+}
+
+.gameImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Звёздочка */
+.favoriteButton {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    z-index: 10;
+}
+
+.favoriteButton:hover {
+    transform: scale(1.2) !important;
+}
+
+.favoriteIcon,
+.favoriteIconFilled {
+    font-size: 28px !important;
+    color: #B93838 !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Бейдж скидки — красный ромб в правом верхнем углу */
+.discountBadge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #e63946;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 5px 9px;
+    border-radius: 4px;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgb(255, 10, 10);
+    clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%);
+    transform: skewX(-6deg);
+}
+
+/* === КНОПКА ДОБАВЛЕНИЯ В КОРЗИНУ === */
+.addToCartButton {
+    position: absolute;
+    bottom: 60px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: none !important;
+    padding: 8px !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+    z-index: 10;
+}
+
+.addToCartButton:hover {
+    transform: scale(1.1) !important;
+    background: rgba(255, 255, 255, 1) !important;
+}
+
+.addToCartButton svg {
+    font-size: 20px !important;
+    color: #d32f2f !important;
+}
+
+/* Старая цена — красная, перечёркнутая */
+.oldPrice {
+    font-size: 15px;
+    color: #ff121d;
+    text-decoration: line-through;
+    font-weight: 600;
+    opacity: 0.85;
+    transition: color 0.3s ease;
+}
+
+.saleCard.dark .oldPrice {
+    color: #ff5a5a !important; /* чуть светлее для читаемости */
+}
+
+/* Новая цена — зелёная, жирная */
+.newPrice {
+    font-size: 22px;
+    font-weight: 900;
+    color: #2ecc71;
+    margin-left: auto;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    transition: color 0.3s ease;
+}
+
+.saleCard.dark .newPrice {
+    color: #2ecc71 !important; /* остаётся зелёной */
+}
+
+/* Панель с ценой */
+.saleInfoPanel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%);
+    padding: 16px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 5;
+    backdrop-filter: blur(3px);
+    transition: background 0.3s ease;
+}
+
+/* ТЁМНАЯ ТЕМА: ЧЁРНЫЙ ГРАДИЕНТ */
+.saleCard.dark .saleInfoPanel {
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 100%) !important;
+}
+
+/* Заголовок */
+.gameTitle {
+    margin: 0;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s ease;
+    background: inherit;
+    border-radius: 0 0 12px 12px;
+}
+
+.saleCard.dark .gameTitle {
+    color: #ffffff !important;
+}
+
+/* Плавные переходы */
+* {
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
