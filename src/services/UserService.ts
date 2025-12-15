@@ -2,14 +2,12 @@
 import BaseService from './BaseService';
 import type { Product } from '../models/Bill';
 
-// Тип для данных логина
 type LoginData = {
     email?: string;
     password?: string;
     googleJwtToken?: string;
 };
 
-// Тип для данных регистрации (теперь он такой же, как для логина)
 type RegisterData = {
     email?: string;
     password?: string;
@@ -17,9 +15,6 @@ type RegisterData = {
 };
 
 class UserService extends BaseService {
-    /**
-     * Авторизация пользователя
-     */
     async login(data: LoginData) {
         return this.request<{ token?: string; message?: string }>('/authorization/login', {
             method: 'POST',
@@ -28,12 +23,7 @@ class UserService extends BaseService {
         });
     }
 
-    /**
-     * Регистрация пользователя
-     */
-    // 👇 ЗМІНА ТУТ: тепер приймаємо RegisterData
     async register(data: RegisterData) {
-        // 👇 І ТУТ: очікуємо, що бекенд може повернути токен одразу
         return this.request<{ token?: string; message?: string }>('/authorization/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -42,17 +32,16 @@ class UserService extends BaseService {
     }
 
     /**
-     * Получение профиля текущего пользователя по токену
+     * Получение профиля
      */
     async getProfile() {
-        // ... (остальной код без изменений)
         return this.request<{
             username: string;
             email: string;
             role: string;
             createdAt: string;
             updatedAt?: string;
-            avatarUrl?: string;
+            avatarUrl?: string; // Прямая ссылка (с token)
             bills: Array<{
                 id: number;
                 userId: number;
@@ -90,37 +79,27 @@ class UserService extends BaseService {
     }
 
     /**
-     * Обновление информации пользователя (включая аватар)
+     * Обновление профиля (включая аватар)
      */
     async updateUser(data: { username?: string; email?: string; avatar?: File }) {
-        // ... (остальной код без изменений)
         const formData = new FormData();
 
-        if (data.username) {
-            formData.append('username', data.username);
-        }
-        if (data.email) {
-            formData.append('email', data.email);
-        }
-        if (data.avatar) {
-            formData.append('avatar', data.avatar);
-        }
+        if (data.username) formData.append('username', data.username);
+        if (data.email) formData.append('email', data.email);
+        if (data.avatar) formData.append('avatar', data.avatar);
 
         return this.request<{
             message: string;
             username: string;
             email: string;
-            avatarUrl?: string;
+            avatarUrl?: string; // Прямая ссылка
         }>('/user/update', {
             method: 'PUT',
             body: formData,
-            headers: {} // Убираем Content-Type для FormData
+            headers: {},
         });
     }
 
-    /**
-     * Получение продуктов пользователя (купленных через оплаченные счета)
-     */
     async getUserProducts() {
         return this.request<Product[]>('/user/products', { method: 'GET' });
     }

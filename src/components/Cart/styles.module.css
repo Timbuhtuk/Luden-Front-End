@@ -1,4 +1,43 @@
-/* Overlay */
+/* === ОСНОВНЫЕ ПЕРЕМЕННЫЕ === */
+.cartPopup {
+    --bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --border: #e0e0e0;
+    --hover-bg: #e0e0e0;
+    --input-bg: #f5f5f5;
+    --input-border: #e0e0e0;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    --btn-bg: #d32f2f;
+    --btn-hover: #b71c1c;
+    --clear-bg: #ffffff;
+    --clear-border: #d32f2f;
+    --clear-text: #d32f2f;
+    --clear-hover-bg: #d32f2f;
+    --clear-hover-text: #ffffff;
+}
+
+.cartPopup.dark {
+    --bg: #1e1e1e;
+    --card-bg: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border: #444444;
+    --hover-bg: #3a3a3a;
+    --input-bg: #2d2d2d;
+    --input-border: #555555;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    --btn-bg: #d32f2f;
+    --btn-hover: #f44336;
+    --clear-bg: #2d2d2d;
+    --clear-border: #d32f2f;
+    --clear-text: #d32f2f;
+    --clear-hover-bg: #d32f2f;
+    --clear-hover-text: #ffffff;
+}
+
+/* === Overlay === */
 .overlay {
     position: fixed;
     top: 0;
@@ -10,22 +49,17 @@
     animation: fadeIn 0.2s ease-in-out;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.overlay.dark {
+    background: rgba(0, 0, 0, 0.7);
 }
 
-/* Cart popup */
+/* === Cart popup === */
 .cartPopup {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: #f5f5f5;
+    background: var(--bg);
     border-radius: 16px;
     width: 90%;
     max-width: 1200px;
@@ -33,41 +67,31 @@
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow);
     animation: slideIn 0.3s ease-out;
+    color: var(--text-primary);
 }
 
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -45%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
-}
-
-/* Header */
+/* === Header === */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 24px 32px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
 }
 
 .header h2 {
     font-size: 28px;
     font-weight: 600;
     margin: 0;
-    color: #1a1a1a;
+    color: var(--text-primary);
 }
 
 .continueBtn {
     background: transparent;
     border: none;
-    color: #666;
+    color: var(--text-secondary);
     font-size: 14px;
     cursor: pointer;
     padding: 8px 16px;
@@ -76,11 +100,11 @@
 }
 
 .continueBtn:hover {
-    background: #e0e0e0;
-    color: #1a1a1a;
+    background: var(--hover-bg);
+    color: var(--text-primary);
 }
 
-/* Content */
+/* === Content === */
 .content {
     display: flex;
     gap: 24px;
@@ -89,7 +113,7 @@
     flex: 1;
 }
 
-/* Items list */
+/* === Items list === */
 .itemsList {
     flex: 1;
     overflow-y: auto;
@@ -98,7 +122,7 @@
 
 .emptyCart {
     text-align: center;
-    color: #999;
+    color: var(--text-secondary);
     padding: 40px;
     font-size: 18px;
 }
@@ -106,7 +130,7 @@
 .cartItem {
     display: flex;
     gap: 16px;
-    background: white;
+    background: var(--card-bg);
     padding: 16px;
     border-radius: 12px;
     margin-bottom: 16px;
@@ -133,21 +157,16 @@
     font-size: 18px;
     font-weight: 600;
     margin: 0;
-    color: #1a1a1a;
-}
-
-.accountType {
-    display: flex;
-    align-items: center;
+    color: var(--text-primary);
 }
 
 .accountTypeBtn {
-    background: white;
-    border: 1px solid #e0e0e0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     padding: 8px 16px;
     border-radius: 8px;
     font-size: 14px;
-    color: #333;
+    color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -156,12 +175,8 @@
 }
 
 .accountTypeBtn:hover {
-    border-color: #c0c0c0;
-    background: #fafafa;
-}
-
-.accountTypeBtn svg {
-    font-size: 18px;
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
 }
 
 .quantityControl {
@@ -173,15 +188,15 @@
 
 .quantityControl > span:first-child {
     font-size: 14px;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .quantityButtons {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: white;
-    border: 1px solid #e0e0e0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 4px;
 }
@@ -195,14 +210,11 @@
     cursor: pointer;
     border-radius: 6px;
     transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .quantityButtons button:hover {
-    background: #f0f0f0;
+    background: var(--hover-bg);
 }
 
 .quantityButtons span {
@@ -210,12 +222,13 @@
     text-align: center;
     font-size: 16px;
     font-weight: 500;
+    color: var(--text-primary);
 }
 
 .itemPrice {
     font-size: 18px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-primary);
 }
 
 .deleteBtn {
@@ -224,14 +237,15 @@
     right: 16px;
     width: 36px;
     height: 36px;
-    background: white;
-    border: 1px solid #e0e0e0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    color: var(--text-primary);
 }
 
 .deleteBtn:hover {
@@ -240,14 +254,10 @@
     color: #f44336;
 }
 
-.deleteBtn svg {
-    font-size: 20px;
-}
-
-/* Summary */
+/* === Summary === */
 .summary {
     width: 380px;
-    background: white;
+    background: var(--card-bg);
     border-radius: 12px;
     padding: 24px;
     display: flex;
@@ -257,16 +267,17 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* === Country Select === */
 .countrySelect {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    position: relative;
 }
 
 .countrySelect label {
+    display: block;
     font-size: 16px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-primary);
+    margin-bottom: 8px;
 }
 
 .dropdown {
@@ -276,8 +287,8 @@
 .countryBtn {
     width: 100%;
     padding: 12px 16px;
-    background: #f5f5f5;
-    border: 1px solid #e0e0e0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -285,11 +296,21 @@
     font-size: 15px;
     cursor: pointer;
     transition: all 0.2s;
+    color: var(--text-primary);
 }
 
 .countryBtn:hover {
-    border-color: #c0c0c0;
-    background: #efefef;
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
+}
+
+.arrow {
+    transition: transform 0.2s ease;
+    font-size: 16px;
+}
+
+.arrow.rotated {
+    transform: rotate(180deg);
 }
 
 .countryDropdown {
@@ -297,89 +318,101 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #e0e0e0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
     margin-top: 4px;
     max-height: 300px;
     overflow-y: auto;
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: fadeIn 0.2s ease-in-out;
+
+    /* Анімація */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.countryDropdown.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 
 .countryOption {
     width: 100%;
     padding: 12px 16px;
-    background: white;
+    background: var(--card-bg);
     border: none;
     text-align: left;
     font-size: 14px;
     cursor: pointer;
     transition: background 0.2s;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .countryOption:hover {
-    background: #f5f5f5;
+    background: var(--hover-bg);
 }
 
-.countryOption:not(:last-child) {
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.totalRow {
+/* === Totals === */
+.totalRow,
+.finalRow {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 16px 0;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border);
 }
 
-.totalRow span:first-child {
-    font-size: 16px;
-    color: #666;
+.totalRow span:first-child,
+.finalRow span:first-child {
+    color: var(--text-secondary);
 }
 
-.totalPrice {
-    font-size: 20px;
+.totalPrice,
+.finalPrice {
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--text-primary);
 }
 
-.bonusSection {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.finalPrice {
+    font-size: 24px;
+    font-weight: 700;
 }
 
+/* === Bonus Section === */
 .bonusSection h3 {
     font-size: 16px;
     font-weight: 600;
     margin: 0;
-    color: #1a1a1a;
+    color: var(--text-primary);
 }
 
 .bonusInput {
     width: 100%;
     padding: 12px 16px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     font-size: 14px;
     outline: none;
+    background: var(--input-bg);
+    color: var(--text-primary);
     transition: border-color 0.2s;
+}
+
+.bonusInput::placeholder {
+    color: var(--text-secondary);
 }
 
 .bonusInput:focus {
     border-color: #d32f2f;
 }
 
-.bonusInput::placeholder {
-    color: #999;
-}
-
-.applyBtn {
-    background: #d32f2f;
+.applyBtn,
+.paymentBtn {
+    background: var(--btn-bg);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -390,65 +423,23 @@
     transition: background 0.2s;
 }
 
-.applyBtn:hover {
-    background: #b71c1c;
-}
-
-.finalTotal {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 20px 0;
-    border-top: 1px solid #e0e0e0;
-}
-
-.finalRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.finalRow span:first-child {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-}
-
-.finalPrice {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a1a;
-}
-
-.rewardRow {
-    font-size: 14px;
-    color: #666;
+.applyBtn:hover,
+.paymentBtn:hover {
+    background: var(--btn-hover);
 }
 
 .paymentBtn {
     width: 100%;
     padding: 16px;
-    background: #d32f2f;
-    color: white;
-    border: none;
-    border-radius: 8px;
     font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
 }
 
-.paymentBtn:hover {
-    background: #b71c1c;
-}
-
-/* Clear cart button */
 .clearCartBtn {
     width: 100%;
     padding: 12px;
-    background: white;
-    color: #d32f2f;
-    border: 2px solid #d32f2f;
+    background: var(--clear-bg);
+    color: var(--clear-text);
+    border: 2px solid var(--clear-border);
     border-radius: 8px;
     font-size: 15px;
     font-weight: 600;
@@ -458,11 +449,22 @@
 }
 
 .clearCartBtn:hover {
-    background: #d32f2f;
-    color: white;
+    background: var(--clear-hover-bg);
+    color: var(--clear-hover-text);
 }
 
-/* Scrollbar styling */
+/* === Анимации === */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translate(-50%, -45%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* === Скроллбар === */
 .itemsList::-webkit-scrollbar {
     width: 8px;
 }
@@ -472,24 +474,22 @@
 }
 
 .itemsList::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: var(--text-secondary);
     border-radius: 4px;
 }
 
 .itemsList::-webkit-scrollbar-thumb:hover {
-    background: #aaa;
+    background: var(--text-primary);
 }
 
-/* Responsive */
+/* === Адаптив === */
 @media (max-width: 968px) {
     .content {
         flex-direction: column;
     }
-
     .summary {
         width: 100%;
     }
-
     .cartPopup {
         width: 95%;
         max-height: 95vh;

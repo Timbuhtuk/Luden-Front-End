@@ -4,6 +4,7 @@
     font-family: 'Inter', sans-serif;
     position: relative;
     color: #333;
+    transition: background 0.5s ease, color 0.5s ease;
 }
 
 .blurBackground {
@@ -14,8 +15,7 @@
     height: 100%;
     z-index: -1;
     filter: blur(100px);
-    opacity: 0.3;
-    transition: background 0.8s ease;
+    transition: background 0.8s ease, opacity 0.3s ease;
 }
 
 .header {
@@ -35,7 +35,7 @@
     align-items: center;
     gap: 8px;
     font-size: 20px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .headerButton:hover {
@@ -57,7 +57,7 @@
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     color: white;
-    transition: background 0.5s ease;
+    transition: all 0.5s ease;
 }
 
 .avatarContainer {
@@ -87,7 +87,7 @@
     display: block;
 }
 
-.nickname {
+.username {
     font-size: 24px;
     font-weight: bold;
     margin-left: 20px;
@@ -121,10 +121,11 @@
 .formContainer {
     max-width: 400px;
     margin: 20px auto;
-    padding: 20px;
+    padding: 24px;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
 
 .formGroup {
@@ -137,31 +138,37 @@
     font-weight: 600;
     margin-bottom: 8px;
     color: #333;
+    transition: color 0.3s ease;
 }
 
 .input {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 8px;
     outline: none;
-    transition: border-color 0.2s ease;
+    background: #fff;
+    color: #333;
+    transition: all 0.2s ease;
 }
 
 .input:focus {
     border-color: #B93838;
+    box-shadow: 0 0 0 3px rgba(185, 56, 56, 0.1);
 }
 
 .resetPasswordButton {
     background: #f0f0f0;
     border: 1px solid #ddd;
     color: #333;
-    padding: 10px 20px;
+    padding: 12px 20px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.2s ease;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    width: 100%;
 }
 
 .resetPasswordButton:hover {
@@ -171,19 +178,80 @@
 .saveButton {
     background: #B93838;
     color: white;
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: background-color 0.2s ease;
-    margin: 20px auto;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    margin: 20px auto 0;
     width: fit-content;
 }
 
-.saveButton:hover {
+.saveButton:hover:not(:disabled) {
     background-color: #a32f2f;
+    transform: translateY(-1px);
+}
+
+.saveButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+    color: #666;
+}
+
+/* === Тёмная тема === */
+.editProfilePage.dark {
+    color: #e0e0e0;
+    background: #121212;
+}
+
+.editProfilePage.dark .headerButton,
+.editProfilePage.dark .resetPasswordButton {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+.editProfilePage.dark .headerButton:hover,
+.editProfilePage.dark .resetPasswordButton:hover {
+    background: #383838;
+}
+
+.editProfilePage.dark .formContainer {
+    background: #1e1e1e;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.editProfilePage.dark .label {
+    color: #ccc;
+}
+
+.editProfilePage.dark .input {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+.editProfilePage.dark .input:focus {
+    border-color: #ff5252;
+    box-shadow: 0 0 0 3px rgba(255, 82, 82, 0.2);
+}
+
+.editProfilePage.dark .userCard {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.editProfilePage.dark .loading {
+    color: #aaa;
 }

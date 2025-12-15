@@ -2,12 +2,14 @@ import type { Bonus } from '../../models';
 import styles from './styles.module.css';
 import { useState, useEffect } from 'react';
 import { MdPercent, MdMonetizationOn, MdAccessTime } from 'react-icons/md';
+import { useTheme } from '../../context/ThemeContext';
 
 interface BonusCardProps {
     bonus: Bonus;
 }
 
 export const BonusCard = ({ bonus }: BonusCardProps) => {
+    const { isDarkMode } = useTheme();
     const [timeLeft, setTimeLeft] = useState<string>('');
 
     const getIcon = () => {
@@ -25,7 +27,6 @@ export const BonusCard = ({ bonus }: BonusCardProps) => {
 
     useEffect(() => {
         const parseDateFromText = (text: string): Date | null => {
-            // Попробуем найти шаблон даты в тексте
             const dateRegex =
                 /(\d{1,2}\s+\w+\s+\d{4})|(\w+\s+\d{1,2},?\s*\d{4})|(\d{4}-\d{1,2}-\d{1,2})/;
             const match = text.match(dateRegex);
@@ -57,17 +58,38 @@ export const BonusCard = ({ bonus }: BonusCardProps) => {
             }
         };
 
-        updateTimer(); // Инициализация
-        const interval = setInterval(updateTimer, 3600000); // обновляем каждый час
+        updateTimer();
+        const interval = setInterval(updateTimer, 3600000);
         return () => clearInterval(interval);
     }, [bonus.description]);
 
     return (
-        <div className={styles.bonusItem}>
+        <div
+            className={`${styles.bonusItem} ${isDarkMode ? styles.dark : ''}`}
+            style={{
+                background: isDarkMode
+                    ? 'linear-gradient(135deg, #2c1a1d, #3a1f22)'
+                    : 'linear-gradient(135deg, #ffecd2, #fcb69f)',
+            }}
+        >
             {getIcon()}
-            <span className={styles.bonusName}>{bonus.name}</span>
-            <span className={styles.bonusDescription}>{bonus.description}</span>
-            {timeLeft && <span className={styles.bonusTimer}>{timeLeft}</span>}
+            <span className={styles.bonusName} style={{ color: isDarkMode ? '#ff8a80' : '#333' }}>
+                {bonus.name}
+            </span>
+            <span className={styles.bonusDescription} style={{ color: isDarkMode ? '#ccc' : '#555' }}>
+                {bonus.description}
+            </span>
+            {timeLeft && (
+                <span
+                    className={styles.bonusTimer}
+                    style={{
+                        backgroundColor: isDarkMode ? '#871c1c' : '#c54c4c',
+                        color: '#fff',
+                    }}
+                >
+                    {timeLeft}
+                </span>
+            )}
         </div>
     );
 };

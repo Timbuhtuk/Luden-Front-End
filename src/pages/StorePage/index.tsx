@@ -1,5 +1,5 @@
 // src/pages/StorePage.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './styles.module.css';
 import { GameCard } from '../../components/GameCard';
 import { SaleCard } from '../../components/SaleCard';
@@ -17,6 +17,9 @@ import {
 } from 'react-icons/md';
 import type { Game } from '../../models/Game.ts';
 import type { CartItem } from '../../models';
+import { useTheme } from '../../context';
+import { useNavigate } from 'react-router-dom';
+import UserService from '../../services/UserService';
 
 const mockGames: Game[] = [
     {
@@ -118,15 +121,34 @@ export const StorePage = () => {
     const [showSale, setShowSale] = useState(false);
     const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
     const [selectedSale, setSelectedSale] = useState<string | null>(null);
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [language, setLanguage] = useState<'en' | 'uk'>('en');
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+    const [username, setUsername] = useState<string>('nickname'); // Початкове значення
 
+    const { isDarkMode, toggleDarkMode } = useTheme();
     const t = translations[language];
+    const navigate = useNavigate();
 
-    // === ЖАНРЫ (оригинальные названия в данных) ===
+    // === Завантаження username при першому рендері ===
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            UserService.getProfile()
+                .then(profileData => {
+                    if (profileData?.username) {
+                        setUsername(profileData.username);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load username:', err);
+                    // Якщо помилка — залишаємо "nickname"
+                });
+        }
+    }, []);
+
+    // === ЖАНРЫ ===
     const genres = [
         { key: 'openWorld', value: 'Open World', translationKey: 'openWorld' },
         { key: 'rpg', value: 'RPG', translationKey: 'rpg' },
@@ -211,14 +233,12 @@ export const StorePage = () => {
     const handleAddToCart = (game: Game) => {
         const existingItem = cartItems.find(item => item.game.id === game.id);
         if (existingItem) {
-            // Увеличиваем количество, если игра уже в корзине
             setCartItems(prev =>
                 prev.map(item =>
                     item.game.id === game.id ? { ...item, quantity: item.quantity + 1 } : item
                 )
             );
         } else {
-            // Добавляем новую игру в корзину
             setCartItems(prev => [...prev, { game, quantity: 1, forMyAccount: true }]);
         }
     };
@@ -260,7 +280,7 @@ export const StorePage = () => {
                 <div className={styles.headerActions}>
                     <button
                         aria-label="Toggle theme"
-                        onClick={() => setIsDarkMode(prev => !prev)}
+                        onClick={toggleDarkMode}
                     >
                         {isDarkMode ? (
                             <MdNightlight className={styles.sunIcon} />
@@ -304,8 +324,14 @@ export const StorePage = () => {
                             </div>
                         )}
                     </div>
-                    <button className={styles.profileBtn}>
-                        <MdAccountCircle /><span>nickname</span>
+
+                    {/* === Кнопка з реальним username + перехід на профіль === */}
+                    <button
+                        className={styles.profileBtn}
+                        onClick={() => navigate('/profile')}
+                    >
+                        <MdAccountCircle />
+                        <span>{username}</span>
                     </button>
                 </div>
             </header>
@@ -422,6 +448,7 @@ export const StorePage = () => {
                 onToggleAccountType={handleToggleAccountType}
                 onClearCart={handleClearCart}
                 language={language}
+                isDarkMode={isDarkMode}
             />
         </div>
     );

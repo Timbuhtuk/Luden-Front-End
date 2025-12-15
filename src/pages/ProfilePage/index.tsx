@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import styles from './styles.module.css';
 import { usePalette } from 'color-thief-react';
 import {
@@ -18,14 +18,15 @@ import {
 } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { getTextColor } from '../../utils/colorUtils';
-import type { Bill, Product }  from '../../models/Bill.ts';
-import type { User } from  '../../models/User.ts';
+import type { Bill, Product } from '../../models/Bill.ts';
+import type { User } from '../../models/User.ts';
 import type { Bonus } from '../../models/Bonus.ts';
 import type { Game } from '../../models/Game.ts';
 import UserService from '../../services/UserService';
 import BillService from '../../services/BillService';
 import { BillCard } from '../../components/BillCard';
 import { ProductCard } from '../../components/ProductCard';
+import { useTheme } from '../../context';
 
 export const ProfilePage = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -40,44 +41,75 @@ export const ProfilePage = () => {
     const switchAccountRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('My library');
-    
-    const [palette, setPalette] = useState<string[] | null>(null);
 
-    const { data: colorPaletteData } = usePalette(user?.avatar || '', 2, 'hex', {
+    // НОВЕ: URL + ключ для примусового оновлення
+    const [avatarUrl, setAvatarUrl] = useState<string>('');
+    const [avatarVersion, setAvatarVersion] = useState<number>(0);
+
+    const [palette, setPalette] = useState<string[] | null>(null);
+    const { isDarkMode } = useTheme();
+
+    // === Оновлюємо URL + версію ===
+    useEffect(() => {
+        if (user?.avatar) {
+            setAvatarUrl(user.avatar);
+            setAvatarVersion(prev => prev + 1);
+        }
+    }, [user?.avatar]);
+
+    // === usePalette з ключем (виправлено TS2345) ===
+    const paletteKey = `${avatarUrl}?v=${avatarVersion}`;
+    const { data: colorPaletteData } = usePalette(paletteKey, 2, 'hex', {
         crossOrigin: 'Anonymous',
         quality: 10,
     });
-    
+
     useEffect(() => {
         if (colorPaletteData) {
             setPalette(colorPaletteData);
         }
-    }, [colorPaletteData]);
+    }, [colorPaletteData, paletteKey]);
+
+    // === Градієнти ===
+    const backgroundGradient = useMemo(() => {
+        if (palette) {
+            return `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`;
+        }
+        return isDarkMode
+            ? 'linear-gradient(135deg, #222, #444)'
+            : 'linear-gradient(135deg, #888, #555)';
+    }, [palette, isDarkMode]);
+
+    const userCardGradient = useMemo(() => {
+        if (palette) {
+            return `linear-gradient(90deg, ${palette[0]}, ${palette[1]})`;
+        }
+        return isDarkMode
+            ? 'linear-gradient(90deg, #333, #555)'
+            : 'linear-gradient(90deg, #888, #555)';
+    }, [palette, isDarkMode]);
 
     const dominantColor = palette?.[0] || '#888';
     const textColor = getTextColor(dominantColor);
 
-
+    // === Завантаження ===
     const fetchUserData = async () => {
         try {
             const profileData = await UserService.getProfile();
-
             if (profileData) {
                 setUser({
-                    id: 0, 
+                    id: 0,
                     username: profileData.username,
                     password_hash: '',
                     created_at: new Date(profileData.createdAt),
                     updated_at: profileData.updatedAt ? new Date(profileData.updatedAt) : undefined,
                     email: profileData.email,
                     role: profileData.role as 'user' | 'admin' | 'moderator',
-                    avatar: profileData.avatarUrl || '', 
+                    avatar: profileData.avatarUrl || '',
                 });
-
                 setBills(profileData.bills || []);
                 setProducts(profileData.products || []);
             } else {
-                console.error('Failed to fetch user data');
                 navigate('/');
             }
         } catch (error) {
@@ -97,14 +129,16 @@ export const ProfilePage = () => {
         }
     };
 
-
+    // === Оновлення аватарки ===
     const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file && user) {
             try {
                 const result = await UserService.updateUser({ avatar: file });
                 if (result && result.avatarUrl) {
-                    setUser({ ...user, avatar: result.avatarUrl });
+                    const newUrl = `${result.avatarUrl}?t=${Date.now()}`;
+                    setUser(prev => prev ? { ...prev, avatar: newUrl } : null);
+                    setAvatarVersion(prev => prev + 1); // Примусово оновити usePalette
                     alert('Avatar uploaded successfully!');
                 }
             } catch (error) {
@@ -118,6 +152,7 @@ export const ProfilePage = () => {
         fileInputRef.current?.click();
     };
 
+    // === Обробники ===
     const handleSettingsToggle = () => {
         setIsSettingsOpen(!isSettingsOpen);
         setIsSwitchAccountOpen(false);
@@ -147,7 +182,7 @@ export const ProfilePage = () => {
 
     const handleAddNewAccount = () => {
         setIsSwitchAccountOpen(false);
-        navigate('/register');
+        navigate('/registration');
     };
 
     const handleEditProfile = () => {
@@ -181,7 +216,6 @@ export const ProfilePage = () => {
                 setIsSwitchAccountOpen(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -191,15 +225,16 @@ export const ProfilePage = () => {
     }
 
     return (
-        <div className={styles.profilePage}>
+        <div className={`${styles.profilePage} ${isDarkMode ? styles.dark : ''}`}>
+            {/* === Blur Background === */}
             <div
                 className={styles.blurBackground}
                 style={{
-        background: palette 
-            ? `linear-gradient(135deg, ${palette[0]}, ${palette[1]})`
-            : 'linear-gradient(135deg, #888, #555)',
-    }}
+                    background: backgroundGradient,
+                    opacity: isDarkMode ? 0.5 : 0.3,
+                }}
             />
+
             <input
                 type="file"
                 ref={fileInputRef}
@@ -253,15 +288,16 @@ export const ProfilePage = () => {
             <main>
                 <div
                     className={styles.userCard}
-                    style={{
-            background: palette 
-                ? `linear-gradient(90deg, ${palette[0]}, ${palette[1]})`
-                : 'linear-gradient(90deg, #888, #555)',
-        }}
+                    style={{ background: userCardGradient }}
                 >
                     <div className={styles.avatarContainer} onClick={handleAvatarClick}>
-                        {user.avatar ? (
-                            <img src={user.avatar} alt="User Avatar" className={styles.avatarImage} />
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt="User Avatar"
+                                className={styles.avatarImage}
+                                key={avatarVersion} // Примусово оновити img
+                            />
                         ) : (
                             <MdAccountCircle className={styles.avatarIcon} />
                         )}
@@ -269,7 +305,9 @@ export const ProfilePage = () => {
                             <MdPhotoCamera className={styles.cameraIcon} />
                         </div>
                     </div>
-                    <span className={styles.nickname} style={{ color: textColor }}>{user.username}</span>
+                    <span className={styles.nickname} style={{ color: textColor }}>
+                        {user.username}
+                    </span>
                 </div>
 
                 <nav className={styles.navigation}>

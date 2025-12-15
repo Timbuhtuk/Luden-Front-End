@@ -19,18 +19,20 @@ interface CartProps {
     onToggleAccountType: (gameId: number) => void;
     onClearCart: () => void;
     language?: 'en' | 'uk';
+    isDarkMode?: boolean;
 }
 
 export const Cart = ({
-    isOpen,
-    onClose,
-    items,
-    onUpdateQuantity,
-    onRemoveItem,
-    onToggleAccountType,
-    onClearCart,
-    language = 'en',
-}: CartProps) => {
+                         isOpen,
+                         onClose,
+                         items,
+                         onUpdateQuantity,
+                         onRemoveItem,
+                         onToggleAccountType,
+                         onClearCart,
+                         language = 'en',
+                         isDarkMode = false,
+                     }: CartProps) => {
     const countries: Country[] = [
         { nameKey: 'ukraine', currency: 'UAH', symbol: '₴' },
         { nameKey: 'usa', currency: 'USD', symbol: '$' },
@@ -52,20 +54,17 @@ export const Cart = ({
     const cart = t.cart;
     const countryNames = t.countries;
 
-    // Функция для парсинга цены из строки вида "515 ₴"
     const parsePrice = (priceStr?: string): number => {
         if (!priceStr) return 0;
         const match = priceStr.match(/\d+/);
         return match ? parseInt(match[0], 10) : 0;
     };
 
-    // Функция для форматирования цены с учетом выбранной валюты
     const formatPrice = (priceStr?: string): string => {
         const price = parsePrice(priceStr);
         return `${price} ${selectedCountry.symbol}`;
     };
 
-    // Подсчет общей суммы
     const calculateTotal = (): number => {
         return items.reduce((sum, item) => {
             const price = parsePrice(item.game.price);
@@ -74,17 +73,20 @@ export const Cart = ({
     };
 
     const total = calculateTotal();
-    const bonuses = Math.floor(total * 0.1); // 10% бонусов
+    const bonuses = Math.floor(total * 0.1);
 
     if (!isOpen) return null;
 
     return (
         <>
             {/* Overlay */}
-            <div className={styles.overlay} onClick={onClose} />
+            <div
+                className={`${styles.overlay} ${isDarkMode ? styles.dark : ''}`}
+                onClick={onClose}
+            />
 
             {/* Cart popup */}
-            <div className={styles.cartPopup}>
+            <div className={`${styles.cartPopup} ${isDarkMode ? styles.dark : ''}`}>
                 {/* Header */}
                 <div className={styles.header}>
                     <h2>{cart.shoppingCart}</h2>
@@ -154,7 +156,6 @@ export const Cart = ({
                                         </button>
                                     </div>
                                 ))}
-                                {/* Clear cart button */}
                                 <button className={styles.clearCartBtn} onClick={onClearCart}>
                                     {cart.clearCart}
                                 </button>
@@ -169,13 +170,15 @@ export const Cart = ({
                             <div className={styles.dropdown}>
                                 <button
                                     className={styles.countryBtn}
-                                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                                    onClick={() => setShowCountryDropdown(prev => !prev)}
                                 >
-                                    {countryNames[selectedCountry.nameKey as keyof typeof countryNames]} ({selectedCountry.currency}){' '}
-                                    <MdKeyboardArrowDown />
+                                    {countryNames[selectedCountry.nameKey as keyof typeof countryNames]} ({selectedCountry.currency})
+                                    <MdKeyboardArrowDown
+                                        className={`${styles.arrow} ${showCountryDropdown ? styles.rotated : ''}`}
+                                    />
                                 </button>
                                 {showCountryDropdown && (
-                                    <div className={styles.countryDropdown}>
+                                    <div className={`${styles.countryDropdown} ${styles.visible}`}>
                                         {countries.map(country => (
                                             <button
                                                 key={country.nameKey}

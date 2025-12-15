@@ -5,8 +5,8 @@ import { MdArrowBack, MdPhotoCamera, MdSave } from 'react-icons/md';
 import { getTextColor } from '../../utils/colorUtils';
 import UserService from '../../services/UserService';
 import styles from './styles.module.css';
+import { useTheme } from '../../context/ThemeContext';
 
-// User interface based on backend response
 interface User {
     username: string;
     email: string;
@@ -17,9 +17,10 @@ interface User {
 }
 
 export const EditProfilePage = () => {
+    const { isDarkMode } = useTheme();
     const [user, setUser] = useState<User | null>(null);
     const [avatar, setAvatar] = useState<string | null>(null);
-    const [avatarFile, setAvatarFile] = useState<File | null>(null); // Store file for upload
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,8 +31,7 @@ export const EditProfilePage = () => {
         quality: 10,
     });
 
-    // Calculate text color based on the dominant color
-    const dominantColor = colorPalette?.[0] || '#888';
+    const dominantColor = colorPalette?.[0] || (isDarkMode ? '#333' : '#888');
     const textColor = getTextColor(dominantColor);
 
     const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +39,7 @@ export const EditProfilePage = () => {
         if (file) {
             const newAvatar = URL.createObjectURL(file);
             setAvatar(newAvatar);
-            setAvatarFile(file); // Save file for upload
+            setAvatarFile(file);
         }
     };
 
@@ -54,19 +54,17 @@ export const EditProfilePage = () => {
         try {
             const updateData: { username?: string; email?: string; avatar?: File } = {};
 
-            // Only send changed fields
             if (user.username) updateData.username = user.username;
             if (user.email) updateData.email = user.email;
             if (avatarFile) updateData.avatar = avatarFile;
 
             const result = await UserService.updateUser(updateData);
-
             if (result) {
-                alert('✅ ' + result.message);
+                alert('Profile updated successfully');
             }
             navigate('/profile');
         } catch (error: any) {
-            alert('❌ Error: ' + (error.message || 'Failed to update profile'));
+            alert('Error: ' + (error.message || 'Failed to update profile'));
         } finally {
             setSaving(false);
         }
@@ -90,13 +88,12 @@ export const EditProfilePage = () => {
                         avatarUrl: profileData.avatarUrl,
                     });
 
-                    // Set avatar from backend if exists
                     if (profileData.avatarUrl) {
                         setAvatar(profileData.avatarUrl);
                     }
                 }
             } catch (error: any) {
-                alert('❌ Error loading profile: ' + (error.message || 'Unknown error'));
+                alert('Error loading profile: ' + (error.message || 'Unknown error'));
                 navigate('/login');
             } finally {
                 setLoading(false);
@@ -107,20 +104,24 @@ export const EditProfilePage = () => {
     }, [navigate]);
 
     if (loading || !user) {
-        return <div>Loading...</div>;
+        return <div className={styles.loading}>Loading...</div>;
     }
 
     return (
-        <div className={styles.editProfilePage}>
+        <div className={`${styles.editProfilePage} ${isDarkMode ? styles.dark : ''}`}>
             {/* Blur background */}
             <div
                 className={styles.blurBackground}
                 style={{
                     background: colorPalette
                         ? `linear-gradient(135deg, ${colorPalette[0]}, ${colorPalette[1]})`
-                        : 'linear-gradient(135deg, #888, #555)',
+                        : isDarkMode
+                            ? 'linear-gradient(135deg, #222, #444)'
+                            : 'linear-gradient(135deg, #888, #555)',
+                    opacity: isDarkMode ? 0.5 : 0.3,
                 }}
             />
+
             <input
                 type="file"
                 ref={fileInputRef}
@@ -130,7 +131,10 @@ export const EditProfilePage = () => {
             />
 
             <header className={styles.header}>
-                <button className={`${styles.headerButton} ${styles.backButton}`} onClick={() => navigate('/profile')}>
+                <button
+                    className={`${styles.headerButton} ${styles.backButton}`}
+                    onClick={() => navigate('/profile')}
+                >
                     <MdArrowBack /> Back to Profile
                 </button>
             </header>
@@ -141,7 +145,9 @@ export const EditProfilePage = () => {
                     style={{
                         background: colorPalette
                             ? `linear-gradient(90deg, ${colorPalette[0]}, ${colorPalette[1]})`
-                            : 'linear-gradient(90deg, #888, #555)',
+                            : isDarkMode
+                                ? 'linear-gradient(90deg, #333, #555)'
+                                : 'linear-gradient(90deg, #888, #555)',
                     }}
                 >
                     <div className={styles.avatarContainer} onClick={handleAvatarClick}>
@@ -154,7 +160,9 @@ export const EditProfilePage = () => {
                             <MdPhotoCamera className={styles.cameraIcon} />
                         </div>
                     </div>
-                    <span className={styles.username} style={{ color: textColor }}>{user.username}</span>
+                    <span className={styles.username} style={{ color: textColor }}>
+                        {user.username}
+                    </span>
                 </div>
 
                 <div className={styles.formContainer}>
@@ -187,7 +195,11 @@ export const EditProfilePage = () => {
                             Reset Password
                         </button>
                     </div>
-                    <button className={styles.saveButton} onClick={handleSave} disabled={saving}>
+                    <button
+                        className={styles.saveButton}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
                         <MdSave /> {saving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>

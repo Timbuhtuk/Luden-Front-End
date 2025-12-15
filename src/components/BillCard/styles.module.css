@@ -1,5 +1,4 @@
 .billCard {
-    background-color: white;
     border-radius: 12px;
     padding: 20px;
     display: flex;
@@ -7,7 +6,8 @@
     gap: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-left: 6px solid;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .billCard:hover {
@@ -15,30 +15,11 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.bordergreen {
-    border-left-color: #4caf50;
-}
-
-.borderorange {
-    border-left-color: #ff9800;
-}
-
-.borderred {
-    border-left-color: #f44336;
-}
-
-.borderblue {
-    border-left-color: #2196f3;
-}
-
-.bordergray {
-    border-left-color: #9e9e9e;
-}
-
+/* Убираем старые классы — теперь цвета через inline style */
 .amount {
     font-size: 28px;
     font-weight: 700;
-    color: #333;
+    transition: color 0.3s ease;
 }
 
 .status {
@@ -48,30 +29,21 @@
     font-size: 14px;
     text-align: center;
     color: white;
-}
-
-.statusgreen {
-    background-color: #4caf50;
-}
-
-.statusorange {
-    background-color: #ff9800;
-}
-
-.statusred {
-    background-color: #f44336;
-}
-
-.statusblue {
-    background-color: #2196f3;
-}
-
-.statusgray {
-    background-color: #9e9e9e;
+    align-self: flex-start;
+    transition: background-color 0.3s ease;
 }
 
 .date {
-    color: #999;
     font-size: 14px;
     font-style: italic;
+    transition: color 0.3s ease;
+}
+
+/* === Тёмная тема === */
+.billCard.dark {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.billCard.dark:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
