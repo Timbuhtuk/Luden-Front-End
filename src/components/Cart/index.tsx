@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MdDelete, MdKeyboardArrowDown } from 'react-icons/md';
 import type { CartItem } from '../../models';
 import { translations } from '../../locales';
+import { PaymentModal } from '../PaymentModal';
 import styles from './styles.module.css';
 
 type Country = {
@@ -49,6 +50,7 @@ export const Cart = ({
     const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const [bonusInput, setBonusInput] = useState('');
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     const t = translations[language];
     const cart = t.cart;
@@ -74,6 +76,16 @@ export const Cart = ({
 
     const total = calculateTotal();
     const bonuses = Math.floor(total * 0.1);
+
+    const handleGoToPayment = () => {
+        if (items.length === 0) return;
+        setShowPaymentModal(true);
+    };
+
+    const handlePaymentSuccess = () => {
+        onClearCart();
+        alert(language === 'uk' ? 'Оплата успішна!' : 'Payment successful!');
+    };
 
     if (!isOpen) return null;
 
@@ -229,10 +241,33 @@ export const Cart = ({
                             </div>
                         </div>
 
-                        <button className={styles.paymentBtn}>{cart.goToPayment}</button>
+                        <button
+                            className={styles.paymentBtn}
+                            onClick={handleGoToPayment}
+                            disabled={items.length === 0}
+                        >
+                            {cart.goToPayment}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                totalAmount={total}
+                currency={selectedCountry.currency}
+                currencySymbol={selectedCountry.symbol}
+                cartItems={items.map(item => ({
+                    productId: item.game.id,
+                    quantity: item.quantity,
+                    price: parsePrice(item.game.price),
+                }))}
+                onPaymentSuccess={handlePaymentSuccess}
+                language={language}
+                isDarkMode={isDarkMode}
+            />
         </>
     );
 };

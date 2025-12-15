@@ -3,6 +3,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import type { CartItem } from '@shared/types';
 import { translations } from '@shared/lib/i18n';
 import { CartItemComponent } from './CartItem';
+import { PaymentModal } from '../../../components/PaymentModal';
 import styles from './styles.module.css';
 
 type Country = {
@@ -50,6 +51,7 @@ export const Cart = ({
     const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const [bonusInput, setBonusInput] = useState('');
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     const t = translations[language];
     const cart = t.cart;
@@ -70,11 +72,6 @@ export const Cart = ({
         return isNaN(price) ? 0 : price;
     };
 
-    const formatPrice = (game: { price?: string; priceValue?: number }): string => {
-        const price = getPrice(game);
-        return `${price.toLocaleString()} ${selectedCountry.symbol}`;
-    };
-
     const calculateTotal = (): number => {
         return items.reduce((sum, item) => {
             const price = getPrice(item.game);
@@ -84,6 +81,19 @@ export const Cart = ({
 
     const total = calculateTotal();
     const bonuses = Math.floor(total * 0.1);
+
+    const handleGoToPayment = () => {
+        if (items.length === 0) return;
+        console.log('Opening payment modal...', { total, items });
+        setShowPaymentModal(true);
+    };
+
+    const handlePaymentSuccess = () => {
+        console.log('Payment successful!');
+        onClearCart();
+        setShowPaymentModal(false);
+        alert(language === 'uk' ? 'Оплата успішна!' : 'Payment successful!');
+    };
 
     if (!isOpen) return null;
 
@@ -197,10 +207,36 @@ export const Cart = ({
                             </div>
                         </div>
 
-                        <button className={styles.paymentBtn}>{cart.goToPayment}</button>
+                        <button
+                            className={styles.paymentBtn}
+                            onClick={handleGoToPayment}
+                            disabled={items.length === 0}
+                        >
+                            {cart.goToPayment}
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => {
+                    console.log('Closing payment modal');
+                    setShowPaymentModal(false);
+                }}
+                totalAmount={total}
+                currency={selectedCountry.currency}
+                currencySymbol={selectedCountry.symbol}
+                cartItems={items.map(item => ({
+                    productId: item.game.id,
+                    quantity: item.quantity,
+                    price: getPrice(item.game),
+                }))}
+                onPaymentSuccess={handlePaymentSuccess}
+                language={language}
+                isDarkMode={isDarkMode}
+            />
         </>
     );
 };

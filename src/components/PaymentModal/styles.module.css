@@ -1,0 +1,276 @@
+/* === ОСНОВНЫЕ ПЕРЕМЕННЫЕ === */
+.paymentModal {
+    --bg: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --border: #e0e0e0;
+    --input-bg: #f5f5f5;
+    --input-border: #e0e0e0;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    --btn-bg: #d32f2f;
+    --btn-hover: #b71c1c;
+    --btn-text: #ffffff;
+}
+
+.paymentModal.dark {
+    --bg: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border: #444444;
+    --input-bg: #1e1e1e;
+    --input-border: #555555;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    --btn-bg: #d32f2f;
+    --btn-hover: #f44336;
+    --btn-text: #ffffff;
+}
+
+/* === Overlay === */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.overlay.dark {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* === Modal Window === */
+.paymentModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1001;
+    box-shadow: var(--shadow);
+    animation: slideIn 0.3s ease-out;
+}
+
+/* === Header === */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.header h2 {
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.closeBtn:hover {
+    color: var(--text-primary);
+}
+
+/* === Order Summary === */
+.orderSummary {
+    background: var(--input-bg);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.orderSummary h3 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.summaryRow:last-child {
+    margin-bottom: 0;
+}
+
+.summaryRow.total {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* === Payment Form === */
+.paymentForm {
+    margin-bottom: 24px;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.stripeElement {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 12px;
+    transition: border-color 0.2s;
+}
+
+.stripeElement:focus-within {
+    border-color: var(--btn-bg);
+    outline: none;
+}
+
+/* === Error Message === */
+.errorMessage {
+    background: #ffebee;
+    color: #c62828;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.errorMessage.dark {
+    background: rgba(198, 40, 40, 0.2);
+    color: #ef5350;
+}
+
+/* === Buttons === */
+.actions {
+    display: flex;
+    gap: 12px;
+}
+
+.payButton,
+.cancelButton {
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.payButton {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+}
+
+.payButton:hover:not(:disabled) {
+    background: var(--btn-hover);
+    transform: translateY(-2px);
+}
+
+.payButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cancelButton {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--text-primary);
+}
+
+.cancelButton:hover {
+    background: var(--input-bg);
+}
+
+/* === Loading === */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--btn-bg);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translate(-50%, -48%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .paymentModal {
+        width: 95%;
+        padding: 24px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+}
