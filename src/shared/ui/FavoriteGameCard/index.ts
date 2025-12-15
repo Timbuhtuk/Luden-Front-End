@@ -1,0 +1,2 @@
+export { FavoriteGameCard } from './FavoriteGameCard';
+

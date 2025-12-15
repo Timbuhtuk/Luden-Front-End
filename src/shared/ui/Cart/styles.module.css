@@ -1,0 +1,497 @@
+/* === ОСНОВНЫЕ ПЕРЕМЕННЫЕ === */
+.cartPopup {
+    --bg: #f5f5f5;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --border: #e0e0e0;
+    --hover-bg: #e0e0e0;
+    --input-bg: #f5f5f5;
+    --input-border: #e0e0e0;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    --btn-bg: #d32f2f;
+    --btn-hover: #b71c1c;
+    --clear-bg: #ffffff;
+    --clear-border: #d32f2f;
+    --clear-text: #d32f2f;
+    --clear-hover-bg: #d32f2f;
+    --clear-hover-text: #ffffff;
+}
+
+.cartPopup.dark {
+    --bg: #1e1e1e;
+    --card-bg: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border: #444444;
+    --hover-bg: #3a3a3a;
+    --input-bg: #2d2d2d;
+    --input-border: #555555;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    --btn-bg: #d32f2f;
+    --btn-hover: #f44336;
+    --clear-bg: #2d2d2d;
+    --clear-border: #d32f2f;
+    --clear-text: #d32f2f;
+    --clear-hover-bg: #d32f2f;
+    --clear-hover-text: #ffffff;
+}
+
+/* === Overlay === */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.overlay.dark {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* === Cart popup === */
+.cartPopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 100vh;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+    animation: slideIn 0.3s ease-out;
+    color: var(--text-primary);
+}
+
+/* === Header === */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+}
+
+.header h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.continueBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.continueBtn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+/* === Content === */
+.content {
+    display: flex;
+    gap: 24px;
+    padding: 24px 32px;
+    overflow: hidden;
+    flex: 1;
+}
+
+/* === Items list === */
+.itemsList {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 16px;
+}
+
+.emptyCart {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px;
+    font-size: 18px;
+}
+
+.cartItem {
+    display: flex;
+    gap: 16px;
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.gameImage {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.itemInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.itemInfo h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.accountTypeBtn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.accountTypeBtn:hover {
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
+}
+
+.quantityControl {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: auto;
+}
+
+.quantityControl > span:first-child {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.quantityButtons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.quantityButtons button {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+    color: var(--text-primary);
+}
+
+.quantityButtons button:hover {
+    background: var(--hover-bg);
+}
+
+.quantityButtons span {
+    min-width: 30px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.itemPrice {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.deleteBtn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--text-primary);
+}
+
+.deleteBtn:hover {
+    background: #fee;
+    border-color: #f44336;
+    color: #f44336;
+}
+
+/* === Summary === */
+.summary {
+    width: 380px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-self: flex-start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* === Country Select === */
+.countrySelect {
+    position: relative;
+}
+
+.countrySelect label {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.countryBtn {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+}
+
+.countryBtn:hover {
+    border-color: var(--text-secondary);
+    background: var(--hover-bg);
+}
+
+.arrow {
+    transition: transform 0.2s ease;
+    font-size: 16px;
+}
+
+.arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.countryDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    /* Анімація */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.countryDropdown.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.countryOption {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text-primary);
+}
+
+.countryOption:hover {
+    background: var(--hover-bg);
+}
+
+/* === Totals === */
+.totalRow,
+.finalRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.totalRow span:first-child,
+.finalRow span:first-child {
+    color: var(--text-secondary);
+}
+
+.totalPrice,
+.finalPrice {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.finalPrice {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* === Bonus Section === */
+.bonusSection h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.bonusInput {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+}
+
+.bonusInput::placeholder {
+    color: var(--text-secondary);
+}
+
+.bonusInput:focus {
+    border-color: #d32f2f;
+}
+
+.applyBtn,
+.paymentBtn {
+    background: var(--btn-bg);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.applyBtn:hover,
+.paymentBtn:hover {
+    background: var(--btn-hover);
+}
+
+.paymentBtn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+}
+
+.clearCartBtn {
+    width: 100%;
+    padding: 12px;
+    background: var(--clear-bg);
+    color: var(--clear-text);
+    border: 2px solid var(--clear-border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+}
+
+.clearCartBtn:hover {
+    background: var(--clear-hover-bg);
+    color: var(--clear-hover-text);
+}
+
+/* === Анимации === */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translate(-50%, -45%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* === Скроллбар === */
+.itemsList::-webkit-scrollbar {
+    width: 8px;
+}
+
+.itemsList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.itemsList::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 4px;
+}
+
+.itemsList::-webkit-scrollbar-thumb:hover {
+    background: var(--text-primary);
+}
+
+/* === Адаптив === */
+@media (max-width: 968px) {
+    .content {
+        flex-direction: column;
+    }
+    .summary {
+        width: 100%;
+    }
+    .cartPopup {
+        width: 95%;
+        max-height: 95vh;
+    }
+}

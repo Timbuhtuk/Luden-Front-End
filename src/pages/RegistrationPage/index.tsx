@@ -1,18 +1,25 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MdVisibility, MdVisibilityOff, MdLanguage, MdWbSunny, MdNightlight } from 'react-icons/md';
 import styles from './styles.module.css';
 import loginPattern from '../../assets/login-pattern.jpg';
 import ludenLogo from '../../assets/luden-logo.svg';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import UserService from '../../services/UserService';
-
-import { GoogleLogin } from '@react-oauth/google';
-import type { CredentialResponse } from '@react-oauth/google';
+import { useRegisterMutation, useLoginMutation } from '@features/auth';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { useTranslation } from '@shared/lib';
+import { useTheme } from '@app/providers';
 
 export const RegistrationPage = () => {
     const navigate = useNavigate();
+    const { t, setLanguage, language } = useTranslation();
+    const { isDarkMode, toggleDarkMode } = useTheme();
+    const [register] = useRegisterMutation();
+    const [login] = useLoginMutation();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPasswords, setShowPasswords] = useState(false); // ← ОДИН стан для обох
     const [message, setMessage] = useState('');
 
     const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -21,51 +28,62 @@ export const RegistrationPage = () => {
     };
 
     const handleSuccessfulLogin = (token: string) => {
-        localStorage.setItem('authToken', token);
-        setMessage('✅ Login successful! Redirecting...');
-        setTimeout(() => navigate('/profile'), 500);
+        if (!token) {
+            console.error('handleSuccessfulLogin called with empty token');
+            handleFailedLogin(new Error('Token is empty'));
+            return;
+        }
+        
+        try {
+            localStorage.setItem('authToken', token);
+            setMessage(t('registration.registrationSuccess'));
+            // Используем requestAnimationFrame для гарантии обновления UI перед редиректом
+            requestAnimationFrame(() => {
+                setTimeout(() => navigate('/profile'), 500);
+            });
+        } catch (error) {
+            console.error('Failed to save token or navigate:', error);
+            handleFailedLogin(new Error('Failed to complete registration process'));
+        }
     };
 
     const handleFailedLogin = (error: any) => {
-        console.error('Login failed:', error);
-        const errorMessage = error.message || 'An unknown error occurred.';
-        setMessage(`❌ Error: ${errorMessage}`);
+        const errorMessage = error.message || t('registration.unknownError');
+        setMessage(t('registration.loginFailed').replace('{error}', errorMessage));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!email || !password || !confirmPassword) {
-            alert('Please fill in all fields.');
+            setMessage(t('registration.fillAllFields'));
             return;
         }
 
         if (password !== confirmPassword) {
-            alert('Passwords do not match.');
+            setMessage(t('registration.passwordsMismatch'));
             return;
         }
 
         try {
-            setMessage('⏳ Registering...');
-            await UserService.register({ email, password });
-            setMessage('✅ Registration successful! Logging in...');
+            setMessage(t('registration.registering'));
+            await register({ email, password }).unwrap();
+            setMessage(t('registration.registrationComplete'));
 
-            const loginResult = await UserService.login({ email, password });
+            const loginResult = await login({ email, password }).unwrap();
             if (loginResult?.token) {
                 handleSuccessfulLogin(loginResult.token);
             } else {
-                setMessage('❌ Login failed. Please try logging in manually.');
+                setMessage(t('registration.couldNotLogin'));
                 setTimeout(() => navigate('/'), 2000);
             }
         } catch (regError: any) {
-            if (regError.message?.includes('EmailBusy') || regError.message?.includes('400')) {
-                setMessage('📧 Email already registered. Logging in...');
+            if (regError.data?.message?.includes('EmailBusy') || regError.status === 400) {
+                setMessage(t('registration.emailRegistered'));
                 try {
-                    const loginResult = await UserService.login({ email, password });
+                    const loginResult = await login({ email, password }).unwrap();
                     if (loginResult?.token) {
                         handleSuccessfulLogin(loginResult.token);
-                    } else {
-                        throw new Error('Login failed after finding existing account.');
                     }
                 } catch (loginError) {
                     handleFailedLogin(loginError);
@@ -77,7 +95,7 @@ export const RegistrationPage = () => {
     };
 
     const handleGoogleLoginSuccess = async (response: CredentialResponse) => {
-        setMessage('⏳ Processing Google sign-in...');
+        setMessage(t('registration.processingGoogle'));
 
         if (!response.credential) {
             handleFailedLogin(new Error('Google did not provide credentials.'));
@@ -85,28 +103,38 @@ export const RegistrationPage = () => {
         }
 
         try {
-            setMessage('⏳ Creating account...');
-            const registrationResult = await UserService.register({ googleJwtToken: response.credential });
-            if (registrationResult?.token) {
-                handleSuccessfulLogin(registrationResult.token);
+            setMessage(t('registration.creatingAccount'));
+            const registrationResult = await register({ googleJwtToken: response.credential }).unwrap();
+            
+            // Обрабатываем разные варианты структуры ответа
+            const registerToken = registrationResult?.token || (registrationResult as any)?.data?.token;
+            
+            if (registerToken) {
+                handleSuccessfulLogin(registerToken);
+                return;
+            }
+            
+            // Если регистрация не вернула токен, пытаемся залогиниться
+            setMessage(t('registration.registrationComplete'));
+            const loginResult = await login({ googleJwtToken: response.credential }).unwrap();
+            const loginToken = loginResult?.token || (loginResult as any)?.data?.token;
+            
+            if (loginToken) {
+                handleSuccessfulLogin(loginToken);
             } else {
-                setMessage('✅ Registration complete! Logging in...');
-                const loginResult = await UserService.login({ googleJwtToken: response.credential });
-                if (loginResult?.token) {
-                    handleSuccessfulLogin(loginResult.token);
-                } else {
-                    handleFailedLogin(new Error('Could not log in after registration.'));
-                }
+                handleFailedLogin(new Error('Could not log in after registration.'));
             }
         } catch (regError: any) {
-            if (regError.message?.includes('EmailBusy') || regError.response?.status === 400) {
-                setMessage('📧 Account already exists. Logging in...');
+            if (regError.data?.message?.includes('EmailBusy') || regError.status === 400) {
+                setMessage(t('registration.accountExists'));
                 try {
-                    const loginResult = await UserService.login({ googleJwtToken: response.credential });
-                    if (loginResult?.token) {
-                        handleSuccessfulLogin(loginResult.token);
+                    const loginResult = await login({ googleJwtToken: response.credential }).unwrap();
+                    const loginToken = loginResult?.token || (loginResult as any)?.data?.token;
+                    
+                    if (loginToken) {
+                        handleSuccessfulLogin(loginToken);
                     } else {
-                        handleFailedLogin(new Error('Server did not return a token on login.'));
+                        handleFailedLogin(new Error('Could not log in with existing account.'));
                     }
                 } catch (loginError) {
                     handleFailedLogin(loginError);
@@ -124,73 +152,113 @@ export const RegistrationPage = () => {
     };
 
     return (
-        <div className={styles.pageContainer}>
+        <div className={`${styles.pageContainer} ${isDarkMode ? styles.dark : ''}`}>
             <div className={styles.leftPanel}>
-                <img src={loginPattern} alt="Abstract pattern" className={styles.patternImage} />
+                <img src={loginPattern} alt={t('registration.patternAlt')} className={styles.patternImage} />
             </div>
+
             <div className={styles.rightPanel}>
+                {/* === 3 КНОПКИ УГОРУ === */}
+                <div className={styles.topControls}>
+                    {/* ОДИН ОЧИК — керує обома паролями */}
+                    <button
+                        onClick={() => setShowPasswords(!showPasswords)}
+                        className={styles.controlButton}
+                        aria-label={showPasswords ? t('aria.hidePassword') : t('aria.showPassword')}
+                    >
+                        {showPasswords ? <MdVisibilityOff /> : <MdVisibility />}
+                    </button>
+
+                    <button
+                        onClick={() => setLanguage(language === 'en' ? 'uk' : 'en')}
+                        className={styles.controlButton}
+                        aria-label={t('aria.toggleLanguage')}
+                    >
+                        <MdLanguage />
+                    </button>
+
+                    <button
+                        onClick={toggleDarkMode}
+                        className={styles.controlButton}
+                        aria-label={t('aria.toggleTheme')}
+                    >
+                        {isDarkMode ? <MdWbSunny /> : <MdNightlight />}
+                    </button>
+                </div>
+
                 <div className={styles.formContainer}>
                     <div className={styles.header}>
-                        <h2>Welcome to</h2>
+                        <h2>{t('registration.welcome')}</h2>
                         <img src={ludenLogo} alt="Luden Logo" className={styles.logo} />
                     </div>
-                    <p className={styles.subtitle}>
-                        Build your collection of legendary games - start now!
-                    </p>
+                    <p className={styles.subtitle}>{t('registration.subtitle')}</p>
 
                     <form className={styles.form} onSubmit={handleSubmit}>
                         <div className={styles.inputGroup}>
-                            <label htmlFor="email">Email</label>
+                            <label htmlFor="email">{t('registration.email')}</label>
                             <input
                                 type="email"
                                 id="email"
-                                placeholder="Email"
+                                placeholder={t('registration.email')}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
-                            <span className={styles.clearIcon} onClick={() => clearInput('email')}>&times;</span>
+                            {email && (
+                                <span className={styles.clearIcon} onClick={() => clearInput('email')} aria-label={t('aria.clearEmail')}>
+                                    ×
+                                </span>
+                            )}
                         </div>
+
                         <div className={styles.inputGroup}>
-                            <label htmlFor="password">Password</label>
+                            <label htmlFor="password">{t('registration.password')}</label>
                             <input
-                                type="password"
+                                type={showPasswords ? 'text' : 'password'}
                                 id="password"
-                                placeholder="Password"
+                                placeholder={t('registration.password')}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <span className={styles.clearIcon} onClick={() => clearInput('password')}>&times;</span>
+                            {password && (
+                                <span className={styles.clearIcon} onClick={() => clearInput('password')} aria-label={t('aria.clearPassword')}>
+                                    ×
+                                </span>
+                            )}
                         </div>
+
                         <div className={styles.inputGroup}>
-                            <label htmlFor="confirmPassword">Confirm password</label>
+                            <label htmlFor="confirmPassword">{t('registration.confirmPassword')}</label>
                             <input
-                                type="password"
+                                type={showPasswords ? 'text' : 'password'}
                                 id="confirmPassword"
-                                placeholder="Confirm password"
+                                placeholder={t('registration.confirmPasswordPlaceholder')}
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                             />
-                            <span className={styles.clearIcon} onClick={() => clearInput('confirmPassword')}>&times;</span>
+                            {confirmPassword && (
+                                <span className={styles.clearIcon} onClick={() => clearInput('confirmPassword')} aria-label={t('aria.clearPassword')}>
+                                    ×
+                                </span>
+                            )}
                         </div>
+
                         <button type="submit" className={styles.loginButton}>
-                            Sign Up
+                            {t('registration.signUpButton')}
                         </button>
                     </form>
 
-                    {message && <p style={{ marginTop: 10, textAlign: 'center' }}>{message}</p>}
+                    {message && <p className={styles.message}>{message}</p>}
 
                     <div className={styles.divider}>
-                        <span>OR</span>
+                        <span>{t('registration.orDivider')}</span>
                     </div>
 
                     <div className={styles.googleButtonContainer}>
                         <GoogleLogin
                             onSuccess={handleGoogleLoginSuccess}
-                            onError={() => {
-                                setMessage('❌ Google login failed.');
-                            }}
+                            onError={() => setMessage(t('registration.googleLoginFailed'))}
                             type="standard"
-                            theme="outline"
+                            theme={isDarkMode ? 'filled_black' : 'outline'}
                             size="large"
                             text="continue_with"
                             shape="rectangular"
@@ -199,10 +267,7 @@ export const RegistrationPage = () => {
                     </div>
 
                     <p className={styles.signupText}>
-                        Already have an account?{' '}
-                        <a href="#" onClick={handleLoginClick}>
-                            Log in
-                        </a>
+                        {t('registration.haveAccount')} <a href="#" onClick={handleLoginClick}>{t('login.loginButton')}</a>
                     </p>
                 </div>
             </div>

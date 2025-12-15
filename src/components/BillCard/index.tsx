@@ -1,6 +1,7 @@
 import type { Bill } from '../../models/Bill';
 import styles from './styles.module.css';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '../../hooks/useTranslation'; // ← ДОДАНО
 
 interface BillCardProps {
     bill: Bill;
@@ -8,6 +9,7 @@ interface BillCardProps {
 
 export const BillCard = ({ bill }: BillCardProps) => {
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation(); // ← ГЛОБАЛЬНИЙ ПЕРЕКЛАД
 
     const getStatusColors = () => {
         const status = bill.status;
@@ -26,12 +28,16 @@ export const BillCard = ({ bill }: BillCardProps) => {
     const colors = getStatusColors();
 
     const formatCurrency = (amount: number) => `${amount.toFixed(0)} ₴`;
+
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
         });
+
+    // ← ПЕРЕКЛАД СТАТУСУ
+    const translatedStatus = t(`billStatus.${bill.status.toLowerCase()}`) || bill.status;
 
     return (
         <div
@@ -52,7 +58,7 @@ export const BillCard = ({ bill }: BillCardProps) => {
                     color: 'white',
                 }}
             >
-                {bill.status.toUpperCase()}
+                {translatedStatus.toUpperCase()} {/* ← ПЕРЕКЛАД */}
             </div>
 
             <div className={styles.date} style={{ color: isDarkMode ? '#aaa' : '#999' }}>

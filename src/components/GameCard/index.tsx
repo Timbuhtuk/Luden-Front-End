@@ -1,7 +1,7 @@
-// src/components/GameCard.tsx
 import type { Game } from '../../models';
 import styles from './styles.module.css';
 import { MdStar, MdStarBorder, MdShoppingCart } from 'react-icons/md';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface GameCardProps {
     game: Game;
@@ -11,8 +11,9 @@ interface GameCardProps {
 }
 
 export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = false }: GameCardProps) => {
-    const discountPercent = game.discountPercent;
+    const { t } = useTranslation();
 
+    const discountPercent = game.discountPercent;
     const priceStr = game.price ?? '';
     const originalPriceStr = priceStr.split(' (was')[0].replace(/[^\d]/g, '');
     const originalPrice = originalPriceStr ? parseInt(originalPriceStr, 10) : null;
@@ -24,6 +25,17 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
     const displayPrice = currentPrice !== null
         ? `${currentPrice.toLocaleString()} €`
         : '—';
+
+    // ← ВИПРАВЛЕНО: Нормалізація ключа жанру
+    const getGenreKey = (genre: string): string => {
+        const normalized = genre
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ''); // "open world" → "openworld"
+        return normalized === 'openworld' ? 'openWorld' : normalized;
+    };
+
+    const translatedGenre = game.genre ? t(`genres.${getGenreKey(game.genre)}`) : '';
 
     return (
         <div className={`${styles.gameCard} ${isDarkMode ? styles.dark : ''}`}>
@@ -37,7 +49,7 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
                             e.stopPropagation();
                             onToggleFavorite(game.id);
                         }}
-                        aria-label={game.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                        aria-label={game.isFavorite ? t('aria.removeFromFavorites') : t('aria.addToFavorites')}
                     >
                         {game.isFavorite ? (
                             <MdStar className={styles.favoriteIconFilled} />
@@ -49,7 +61,7 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
 
                 <div className={styles.infoPanel}>
                     <span className={styles.price}>{displayPrice}</span>
-                    {game.genre && <span className={styles.genre}>{game.genre}</span>}
+                    {game.genre && <span className={styles.genre}>{translatedGenre}</span>}
                 </div>
 
                 {onAddToCart && (
@@ -59,7 +71,7 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
                             e.stopPropagation();
                             onAddToCart(game);
                         }}
-                        aria-label="Add to cart"
+                        aria-label={t('aria.addToCart')}
                     >
                         <MdShoppingCart />
                     </button>

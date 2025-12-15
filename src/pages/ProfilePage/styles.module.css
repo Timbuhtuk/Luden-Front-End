@@ -51,7 +51,41 @@
 
 .headerIcons {
     display: flex;
+    align-items: center;
     gap: 10px;
+}
+
+.bonusInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 214, 10, 0.1);
+    border: 1px solid rgba(255, 214, 10, 0.3);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #FFD60A;
+}
+
+.bonusInfoIcon {
+    font-size: 24px;
+    color: #FFD60A;
+}
+
+.bonusInfoText {
+    color: #FFD60A;
+    white-space: nowrap;
+}
+
+.profilePage.dark .bonusInfo {
+    background: rgba(255, 214, 10, 0.15);
+    border-color: rgba(255, 214, 10, 0.4);
+}
+
+.profilePage.dark .bonusInfoIcon,
+.profilePage.dark .bonusInfoText {
+    color: #FFD60A;
 }
 
 .settingsDropdown {
@@ -483,6 +517,7 @@
     color: #e0e0e0;
     border-color: #333;
 }
+
 
 .profilePage.dark .headerButton:hover,
 .profilePage.dark .dropdownItem:hover {

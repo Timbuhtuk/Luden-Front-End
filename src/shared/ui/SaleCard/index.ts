@@ -1,0 +1,2 @@
+export { SaleCard } from './SaleCard';
+

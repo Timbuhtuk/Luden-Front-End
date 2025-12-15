@@ -1,10 +1,9 @@
-// src/pages/StorePage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import styles from './styles.module.css';
-import { GameCard } from '../../components/GameCard';
-import { SaleCard } from '../../components/SaleCard';
-import { Cart } from '../../components/Cart';
-import { translations } from '../../locales';
+import { GameCard, SaleCard } from '@shared/ui';
+import { Cart } from '@widgets/Cart';
+import ludenLogoKey from '../../assets/Luden-logo-key.png';
+import ludenLogoSvg from '../../assets/luden-logo.svg';
 import {
     MdSearch,
     MdShoppingCart,
@@ -15,140 +14,108 @@ import {
     MdKeyboardArrowDown,
     MdCheck
 } from 'react-icons/md';
-import type { Game } from '../../models/Game.ts';
-import type { CartItem } from '../../models';
-import { useTheme } from '../../context';
+import type { Game, CartItem, ProductDto } from '@shared/types';
+import { useTheme } from '@app/providers';
 import { useNavigate } from 'react-router-dom';
-import UserService from '../../services/UserService';
+import { useGetUserProfileQuery } from '@entities/User';
+import { useTranslation } from '@shared/lib';
+import { useGetProductsQuery } from '@entities/Product';
+import { useGetFavoritesQuery, useAddFavoriteMutation, useRemoveFavoriteMutation } from '@entities/Favorite';
+import { API_BASE_URL, API_ENDPOINTS } from '@shared/config';
+import { getGamePlaceholder } from '@shared/lib/image-placeholder';
 
-const mockGames: Game[] = [
-    {
-        id: 1,
-        title: 'Cyberpunk 2077',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '1 39 €',
-        genre: 'Open World',
-        isFavorite: false,
-        discountPercent: null,
-    },
-    {
-        id: 2,
-        title: 'The Witcher 3',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '79 €',
-        genre: 'RPG',
-        isFavorite: true,
-        discountPercent: 50,
-    },
-    {
-        id: 3,
-        title: 'DOOM Eternal',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '15 €',
-        genre: 'Shooter',
-        isFavorite: false,
-        discountPercent: 50,
-    },
-    {
-        id: 4,
-        title: 'Hollow Knight',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '50 €',
-        genre: 'Indie',
-        isFavorite: true,
-        discountPercent: 100,
-    },
-    {
-        id: 5,
-        title: 'Civilization VI',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '11 €',
-        genre: 'Strategy',
-        isFavorite: false,
-        discountPercent: null,
-    },
-    {
-        id: 6,
-        title: 'Outlast 2',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '49 €',
-        genre: 'Horror',
-        isFavorite: false,
-        discountPercent: 40,
-    },
-    {
-        id: 7,
-        title: 'Need for Speed',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '159 €',
-        genre: 'Racing',
-        isFavorite: false,
-        discountPercent: null,
-    },
-    {
-        id: 8,
-        title: 'GTA V',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '79 €',
-        genre: 'Open World',
-        isFavorite: true,
-        discountPercent: 30,
-    },
-    {
-        id: 9,
-        title: 'Portal 2',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '19 €',
-        genre: 'Action',
-        isFavorite: false,
-        discountPercent: 75,
-    },
-    {
-        id: 10,
-        title: 'Stardew Valley',
-        image: '/src/assets/game-cyberpunk.jpg',
-        price: '29 €',
-        genre: 'Indie',
-        isFavorite: true,
-        discountPercent: null,
-    },
-];
+// Функция для получения URL изображения продукта
+const getProductImageUrl = (product: ProductDto | null | undefined): string => {
+    if (!product) {
+        return getGamePlaceholder('Product', false);
+    }
+    
+    // Приоритет 1: coverUrl из продукта
+    if (product.coverUrl) {
+        return product.coverUrl;
+    }
+    
+    // Приоритет 2: url из файлов
+    if (product.files && product.files.length > 0) {
+        // Ищем файл с изображением, у которого есть url
+        const imageFile = product.files.find((f) => 
+            f?.url && (f?.fileType === 'Image' || f?.mimeType?.startsWith('image/'))
+        ) || product.files.find((f) => f?.url);
+        
+        if (imageFile?.url) {
+            return imageFile.url;
+        }
+        
+        // Если нет url, но есть id, используем blob API
+        const fileWithId = product.files.find((f) => 
+            f?.fileType === 'Image' || f?.mimeType?.startsWith('image/')
+        ) || product.files[0];
+        
+        if (fileWithId?.id) {
+            const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+            return `${baseUrl}${API_ENDPOINTS.blob.image(fileWithId.id)}`;
+        }
+    }
+    
+    // Fallback на красивый плейсхолдер
+    return getGamePlaceholder(product.name || 'Product', false);
+};
 
 export const StorePage = () => {
-    const [filteredGames, setFilteredGames] = useState(mockGames);
+    const [searchQuery, setSearchQuery] = useState('');
     const [activeNav, setActiveNav] = useState('Recommendations');
     const [showCategories, setShowCategories] = useState(false);
     const [showSale, setShowSale] = useState(false);
     const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
     const [selectedSale, setSelectedSale] = useState<string | null>(null);
-    const [language, setLanguage] = useState<'en' | 'uk'>('en');
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-    const [username, setUsername] = useState<string>('nickname'); // Початкове значення
+    const [username, setUsername] = useState<string>('nickname');
 
     const { isDarkMode, toggleDarkMode } = useTheme();
-    const t = translations[language];
     const navigate = useNavigate();
+    const { t, language, setLanguage } = useTranslation();
+    const { data: profileData } = useGetUserProfileQuery();
+    
+    // Загрузка продуктов из API
+    const { data: productsData, isLoading: isLoadingProducts, error: productsError } = useGetProductsQuery();
+    
+    // Загрузка избранных для проверки статуса (только если пользователь авторизован)
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const { data: favoritesData } = useGetFavoritesQuery(undefined, { skip: !token });
+    const [addFavorite] = useAddFavoriteMutation();
+    const [removeFavorite] = useRemoveFavoriteMutation();
+    
+    // Создаем Set избранных ID для быстрой проверки
+    const favoriteProductIds = useMemo(() => {
+        return new Set(favoritesData?.map(fav => fav.product?.id).filter(Boolean) || []);
+    }, [favoritesData]);
+    
+    // Преобразуем продукты в формат Game
+    const games = useMemo<Game[]>(() => {
+        if (!productsData) return [];
+        
+        return productsData.map(product => ({
+            id: product.id,
+            title: product.name || 'Untitled',
+            image: getProductImageUrl(product),
+            price: `${product.price.toLocaleString()} €`,
+            priceValue: product.price, // Сохраняем оригинальную цену для расчетов
+            genre: product.region?.name || undefined,
+            isFavorite: favoriteProductIds.has(product.id),
+            discountPercent: null, // Пока нет скидок в API
+        }));
+    }, [productsData, favoriteProductIds]);
 
-    // === Завантаження username при першому рендері ===
+    // === Завантаження username ===
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            UserService.getProfile()
-                .then(profileData => {
-                    if (profileData?.username) {
-                        setUsername(profileData.username);
-                    }
-                })
-                .catch(err => {
-                    console.error('Failed to load username:', err);
-                    // Якщо помилка — залишаємо "nickname"
-                });
+        if (profileData?.username) {
+            setUsername(profileData.username);
         }
-    }, []);
+    }, [profileData]);
 
-    // === ЖАНРЫ ===
+    // === ЖАНРИ ===
     const genres = [
         { key: 'openWorld', value: 'Open World', translationKey: 'openWorld' },
         { key: 'rpg', value: 'RPG', translationKey: 'rpg' },
@@ -160,28 +127,72 @@ export const StorePage = () => {
         { key: 'racing', value: 'Racing', translationKey: 'racing' },
     ];
 
-    const toggleFavorite = (id: number) => {
-        setFilteredGames(prev =>
-            prev.map(game =>
-                game.id === id ? { ...game, isFavorite: !game.isFavorite } : game
-            )
-        );
-    };
+    // === ПОШУК + ФІЛЬТРИ (useMemo) ===
+    const filteredGames = useMemo(() => {
+        let filtered = [...games];
 
+        // 1. Пошук по назві
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(game =>
+                game.title.toLowerCase().includes(query)
+            );
+        }
+
+        // 2. Фільтр по жанру
+        if (selectedGenre) {
+            filtered = filtered.filter(g => g.genre === selectedGenre);
+        }
+
+        // 3. Фільтр по знижкам
+        if (selectedSale) {
+            const getFinalPrice = (game: Game): number => {
+                if (!game.price) return 999;
+                const basePriceStr = game.price.split(' (was')[0].trim();
+                const basePrice = parseInt(basePriceStr.replace(/[^\d]/g, ''), 10);
+                if (isNaN(basePrice)) return 999;
+                return game.discountPercent !== null
+                    ? Math.round(basePrice * (1 - game.discountPercent / 100))
+                    : basePrice;
+            };
+
+            if (selectedSale === 'All Games') {
+                filtered = filtered.filter(g => g.discountPercent !== null);
+            } else if (selectedSale === '50%+ Off') {
+                filtered = filtered.filter(g => g.discountPercent !== null && g.discountPercent >= 50);
+            } else if (selectedSale === '30%+ Off') {
+                filtered = filtered.filter(g =>
+                    g.discountPercent !== null && g.discountPercent >= 30 && g.discountPercent < 50
+                );
+            } else if (selectedSale === 'Under 10€') {
+                filtered = games.filter(g => {
+                    const finalPrice = getFinalPrice(g);
+                    return finalPrice !== null && finalPrice > 0 && finalPrice < 10;
+                });
+            } else if (selectedSale === 'Free Games') {
+                filtered = filtered.filter(g => {
+                    const price = getFinalPrice(g);
+                    return price === 0;
+                });
+            }
+        }
+
+        return filtered;
+    }, [games, searchQuery, selectedGenre, selectedSale]);
+
+    // === ФІЛЬТРИ ===
     const handleNavClick = (nav: string) => {
         setActiveNav(nav);
         setShowCategories(false);
         setShowSale(false);
         setSelectedGenre(null);
         setSelectedSale(null);
-        setFilteredGames(mockGames);
     };
 
     const filterByGenre = (genreValue: string) => {
         setSelectedGenre(genreValue);
         setSelectedSale(null);
         setActiveNav('Categories');
-        setFilteredGames(mockGames.filter(g => g.genre === genreValue));
         setShowCategories(false);
     };
 
@@ -190,46 +201,11 @@ export const StorePage = () => {
         setSelectedGenre(null);
         setActiveNav('Sale');
         setShowSale(false);
-
-        let filtered: Game[] = mockGames;
-
-        const getFinalPrice = (game: Game): number | null => {
-            if (!game.price) return null;
-            const basePriceStr = game.price.split(' (was')[0].trim();
-            const basePrice = parseInt(basePriceStr.replace(/[^\d]/g, ''), 10);
-            if (isNaN(basePrice)) return null;
-            return game.discountPercent !== null
-                ? Math.round(basePrice * (1 - game.discountPercent / 100))
-                : basePrice;
-        };
-
-        if (option === 'All Games') {
-            filtered = mockGames.filter(g => g.discountPercent !== null);
-        } else if (option === '50%+ Off') {
-            filtered = mockGames.filter(g => g.discountPercent !== null && g.discountPercent >= 50);
-        } else if (option === '30%+ Off') {
-            filtered = mockGames.filter(g =>
-                g.discountPercent !== null && g.discountPercent >= 30 && g.discountPercent < 50
-            );
-        } else if (option === 'Under 10€') {
-            filtered = mockGames.filter(g => {
-                const finalPrice = getFinalPrice(g);
-                return finalPrice !== null && finalPrice > 0 && finalPrice < 10;
-            });
-        } else if (option === 'Free Games') {
-            filtered = mockGames.filter(g => {
-                const finalPrice = getFinalPrice(g);
-                const priceText = g.price?.trim().toLowerCase();
-                return finalPrice === 0 || priceText === 'free' || priceText === '0 €' || !g.price;
-            });
-        }
-
-        setFilteredGames(filtered);
     };
 
     const isSaleView = activeNav === 'Sale' || !!selectedSale;
 
-    // === CART HANDLERS ===
+    // === CART ===
     const handleAddToCart = (game: Game) => {
         const existingItem = cartItems.find(item => item.game.id === game.id);
         if (existingItem) {
@@ -265,38 +241,68 @@ export const StorePage = () => {
         setCartItems([]);
     };
 
+    const toggleFavorite = async (gameId: number) => {
+        if (!token) {
+            // Если пользователь не авторизован, перенаправляем на страницу входа
+            navigate('/');
+            return;
+        }
+        
+        try {
+            const isFavorite = favoriteProductIds.has(gameId);
+            if (isFavorite) {
+                await removeFavorite(gameId).unwrap();
+            } else {
+                await addFavorite(gameId).unwrap();
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+        }
+    };
+
     return (
         <div className={`${styles.storePage} ${isDarkMode ? styles.dark : ''}`}>
             {/* === Header === */}
             <header className={styles.header}>
                 <div className={styles.logo}>
-                    <img src="/src/assets/Luden-logo-key.png" alt="Luden Key" className={styles.logoKey} />
-                    <img src="/src/assets/luden-logo.svg" alt="Luden" className={styles.logoSvg} />
+                    <img src={ludenLogoKey} alt="Luden Key" className={styles.logoKey} />
+                    <img src={ludenLogoSvg} alt="Luden" className={styles.logoSvg} />
                 </div>
+
+                {/* === ПОШУК === */}
                 <div className={styles.searchBar}>
                     <MdSearch className={styles.searchIcon} />
-                    <input type="text" placeholder={t.searchPlaceholder} />
+                    <input
+                        type="text"
+                        placeholder={t('searchPlaceholder')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        aria-label={t('aria.searchGames')}
+                    />
                 </div>
+
                 <div className={styles.headerActions}>
                     <button
-                        aria-label="Toggle theme"
+                        aria-label={t('aria.toggleTheme')}
                         onClick={toggleDarkMode}
                     >
-                        {isDarkMode ? (
-                            <MdNightlight className={styles.sunIcon} />
-                        ) : (
-                            <MdWbSunny className={styles.sunIcon} />
-                        )}
+                        {isDarkMode ? <MdNightlight className={styles.sunIcon} /> : <MdWbSunny className={styles.sunIcon} />}
                     </button>
-                    <button aria-label="Shopping cart" onClick={() => setIsCartOpen(true)}>
+
+                    <button
+                        aria-label={t('aria.shoppingCart')}
+                        onClick={() => setIsCartOpen(true)}
+                    >
                         <MdShoppingCart />
                         {cartItems.length > 0 && (
                             <span className={styles.cartBadge}>{cartItems.length}</span>
                         )}
                     </button>
+
+                    {/* === Language Dropdown === */}
                     <div className={styles.languageDropdown}>
                         <button
-                            aria-label="Toggle language"
+                            aria-label={t('aria.toggleLanguage')}
                             onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
                         >
                             <MdLanguage />
@@ -310,7 +316,7 @@ export const StorePage = () => {
                                         setShowLanguageDropdown(false);
                                     }}
                                 >
-                                    English
+                                    {t('language.english')}
                                 </button>
                                 <button
                                     className={`${styles.languageOption} ${language === 'uk' ? styles.active : ''}`}
@@ -319,16 +325,16 @@ export const StorePage = () => {
                                         setShowLanguageDropdown(false);
                                     }}
                                 >
-                                    Українська
+                                    {t('language.ukrainian')}
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    {/* === Кнопка з реальним username + перехід на профіль === */}
                     <button
                         className={styles.profileBtn}
                         onClick={() => navigate('/profile')}
+                        aria-label={t('aria.profile')}
                     >
                         <MdAccountCircle />
                         <span>{username}</span>
@@ -342,7 +348,7 @@ export const StorePage = () => {
                     className={activeNav === 'Recommendations' ? styles.navActive : ''}
                     onClick={() => handleNavClick('Recommendations')}
                 >
-                    {t.recommendations}
+                    {t('recommendations')}
                 </button>
 
                 <div className={styles.dropdown}>
@@ -354,17 +360,17 @@ export const StorePage = () => {
                             setActiveNav('Categories');
                         }}
                     >
-                        {t.categories} <MdKeyboardArrowDown className={styles.arrow} />
+                        {t('categories')} <MdKeyboardArrowDown className={styles.arrow} />
                     </button>
                     {showCategories && (
                         <div className={styles.dropdownMenu}>
                             {genres.map(g => (
                                 <button
                                     key={g.value}
-                                    className={styles.dropdownItem}
+                                    className={`${styles.dropdownItem} ${selectedGenre === g.value ? styles.dropdownItemActive : ''}`}
                                     onClick={() => filterByGenre(g.value)}
                                 >
-                                    <span>{t.genres[g.translationKey as keyof typeof t.genres]}</span>
+                                    <span>{t(`genres.${g.translationKey}`)}</span>
                                     {selectedGenre === g.value && <MdCheck className={styles.checkIcon} />}
                                 </button>
                             ))}
@@ -381,20 +387,20 @@ export const StorePage = () => {
                             setActiveNav('Sale');
                         }}
                     >
-                        {t.sale} <MdKeyboardArrowDown className={styles.arrow} />
+                        {t('sale')} <MdKeyboardArrowDown className={styles.arrow} />
                     </button>
                     {showSale && (
                         <div className={styles.dropdownMenu}>
                             {[
-                                { key: 'All Games', translation: t.allGames },
-                                { key: '50%+ Off', translation: t.off50 },
-                                { key: '30%+ Off', translation: t.off30 },
-                                { key: 'Under 10€', translation: t.under10 },
-                                { key: 'Free Games', translation: t.freeGames },
+                                { key: 'All Games', translation: t('allGames') },
+                                { key: '50%+ Off', translation: t('off50') },
+                                { key: '30%+ Off', translation: t('off30') },
+                                { key: 'Under 10€', translation: t('under10') },
+                                { key: 'Free Games', translation: t('freeGames') },
                             ].map(option => (
                                 <button
                                     key={option.key}
-                                    className={styles.dropdownItem}
+                                    className={`${styles.dropdownItem} ${selectedSale === option.key ? styles.dropdownItemActive : ''}`}
                                     onClick={() => filterBySale(option.key)}
                                 >
                                     <span>{option.translation}</span>
@@ -408,9 +414,17 @@ export const StorePage = () => {
 
             {/* === Game Grid === */}
             <main className={styles.gameGrid}>
-                {filteredGames.length === 0 ? (
-                    <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#666' }}>
-                        {t.noGames}
+                {isLoadingProducts ? (
+                    <p className={styles.noGames}>
+                        {t('loading') || 'Loading...'}
+                    </p>
+                ) : productsError ? (
+                    <p className={styles.noGames}>
+                        {t('errorLoadingProducts') || 'Error loading products. Please try again later.'}
+                    </p>
+                ) : filteredGames.length === 0 ? (
+                    <p className={styles.noGames}>
+                        {t('noGames')}
                     </p>
                 ) : (
                     filteredGames.map(game => {
@@ -453,3 +467,5 @@ export const StorePage = () => {
         </div>
     );
 };
+
+export default StorePage;

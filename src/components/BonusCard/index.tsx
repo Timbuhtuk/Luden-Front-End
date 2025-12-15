@@ -3,6 +3,7 @@ import styles from './styles.module.css';
 import { useState, useEffect } from 'react';
 import { MdPercent, MdMonetizationOn, MdAccessTime } from 'react-icons/md';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '../../hooks/useTranslation'; // ← ДОДАНО
 
 interface BonusCardProps {
     bonus: Bonus;
@@ -10,33 +11,38 @@ interface BonusCardProps {
 
 export const BonusCard = ({ bonus }: BonusCardProps) => {
     const { isDarkMode } = useTheme();
+    const { t, language } = useTranslation(); // ← ГЛОБАЛЬНИЙ ПЕРЕКЛАД
     const [timeLeft, setTimeLeft] = useState<string>('');
 
+    // === Визначення іконки за назвою (перекладена назва) ===
     const getIcon = () => {
-        switch (bonus.name.toLowerCase()) {
-            case '10% discount':
-                return <MdPercent className={styles.bonusIcon} />;
-            case '50 coins':
-                return <MdMonetizationOn className={styles.bonusIcon} />;
-            case 'free trial':
-                return <MdAccessTime className={styles.bonusIcon} />;
-            default:
-                return null;
+        const bonusKey = bonus.name.toLowerCase();
+        if (bonusKey.includes('discount') || bonusKey.includes('знижка')) {
+            return <MdPercent className={styles.bonusIcon} />;
         }
+        if (bonusKey.includes('coins') || bonusKey.includes('монет')) {
+            return <MdMonetizationOn className={styles.bonusIcon} />;
+        }
+        if (bonusKey.includes('trial') || bonusKey.includes('пробна')) {
+            return <MdAccessTime className={styles.bonusIcon} />;
+        }
+        return null;
     };
 
-    useEffect(() => {
-        const parseDateFromText = (text: string): Date | null => {
-            const dateRegex =
-                /(\d{1,2}\s+\w+\s+\d{4})|(\w+\s+\d{1,2},?\s*\d{4})|(\d{4}-\d{1,2}-\d{1,2})/;
-            const match = text.match(dateRegex);
-            if (match) {
-                const parsedDate = new Date(match[0]);
-                if (!isNaN(parsedDate.getTime())) return parsedDate;
-            }
-            return null;
-        };
+    // === Парсинг дати з опису ===
+    const parseDateFromText = (text: string): Date | null => {
+        const dateRegex =
+            /(\d{1,2}\s+\w+\s+\d{4})|(\w+\s+\d{1,2},?\s*\d{4})|(\d{4}-\d{1,2}-\d{1,2})/;
+        const match = text.match(dateRegex);
+        if (match) {
+            const parsedDate = new Date(match[0]);
+            if (!isNaN(parsedDate.getTime())) return parsedDate;
+        }
+        return null;
+    };
 
+    // === Таймер ===
+    useEffect(() => {
         const updateTimer = () => {
             const expiryDate = parseDateFromText(bonus.description);
             if (!expiryDate) {
@@ -49,19 +55,30 @@ export const BonusCard = ({ bonus }: BonusCardProps) => {
 
             if (diff > 0) {
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor(
-                    (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-                );
-                setTimeLeft(`${days}d ${hours}h left`);
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                // Використовуємо переклад для "d" і "h"
+                const daysLabel = language === 'uk' ? 'д' : 'd';
+                const hoursLabel = language === 'uk' ? 'год' : 'h';
+                setTimeLeft(`${days}${daysLabel} ${hours}${hoursLabel} ${t('bonus.timeLeft').split(' ')[2] || 'left'}`);
             } else {
-                setTimeLeft('Expired');
+                setTimeLeft(t('bonus.expired')); // ← ПЕРЕКЛАД
             }
         };
 
         updateTimer();
-        const interval = setInterval(updateTimer, 3600000);
+        const interval = setInterval(updateTimer, 3600000); // кожну годину
         return () => clearInterval(interval);
-    }, [bonus.description]);
+    }, [bonus.description, language, t]);
+
+    // === Переклад назви бонусу (опціонально: через ключ) ===
+    // Якщо бонуси мають фіксовані назви, краще використовувати ключі
+    const translatedBonusName = (() => {
+        const key = bonus.name.toLowerCase();
+        if (key.includes('10%')) return t('bonus.discount10');
+        if (key.includes('50')) return t('bonus.coins50');
+        if (key.includes('trial')) return t('bonus.freeTrial');
+        return bonus.name; // fallback
+    })();
 
     return (
         <div
@@ -74,7 +91,7 @@ export const BonusCard = ({ bonus }: BonusCardProps) => {
         >
             {getIcon()}
             <span className={styles.bonusName} style={{ color: isDarkMode ? '#ff8a80' : '#333' }}>
-                {bonus.name}
+                {translatedBonusName} {/* ← ПЕРЕКЛАД */}
             </span>
             <span className={styles.bonusDescription} style={{ color: isDarkMode ? '#ccc' : '#555' }}>
                 {bonus.description}

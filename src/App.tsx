@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { EditProfilePage } from './pages/EditProfilePage';
 import { StorePage } from './pages/StorePage';
 import { ThemeProvider } from './context';
+import { LanguageProvider } from './context/LanguageContext';
 import './App.css';
 
 const googleClientId = "737632939461-oh6135nrbqckjm0lrbof5dmp396ridqk.apps.googleusercontent.com";
@@ -14,6 +15,7 @@ const googleClientId = "737632939461-oh6135nrbqckjm0lrbof5dmp396ridqk.apps.googl
 function App() {
     return (
 <ThemeProvider>
+    <LanguageProvider>
         <GoogleOAuthProvider clientId={googleClientId}>
             <BrowserRouter>
                 <Routes>
@@ -26,6 +28,7 @@ function App() {
                 </Routes>
             </BrowserRouter>
         </GoogleOAuthProvider>
+        </LanguageProvider>
 </ThemeProvider>
     );
 }

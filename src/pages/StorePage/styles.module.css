@@ -288,11 +288,30 @@
     background: var(--hover-bg);
 }
 
+.dropdownItemActive {
+    background: rgba(185, 56, 56, 0.1) !important;
+    color: #B93838 !important;
+    font-weight: 600;
+}
+
+.storePage.dark .dropdownItemActive {
+    background: rgba(185, 56, 56, 0.2) !important;
+    color: #ff5252 !important;
+}
+
 .checkIcon {
     margin-left: 8px;
     font-size: 16px;
-    color: #28a745;
+    color: #B93838;
     font-weight: bold;
+}
+
+.dropdownItemActive .checkIcon {
+    color: #B93838;
+}
+
+.storePage.dark .dropdownItemActive .checkIcon {
+    color: #ff5252;
 }
 
 .arrow {
@@ -376,4 +395,57 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 1.2rem;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+/* === ТЕМНА ТЕМА — ПОШУК === */
+.pageContainer.dark .searchBar input {
+    background-color: #1e1e1e;
+    border-color: #444;
+    color: #fff;
+}
+
+.pageContainer.dark .searchBar input::placeholder {
+    color: #888;
+}
+
+.pageContainer.dark .searchBar input:focus {
+    background-color: #2a2a2a;
+    border-color: #B93838;
+    box-shadow: 0 0 0 3px rgba(185, 56, 56, 0.2);
+}
+
+.pageContainer.dark .searchIcon {
+    color: #ccc;
+}
+
+.pageContainer.dark .searchBar input:-webkit-autofill,
+.pageContainer.dark .searchBar input:-webkit-autofill:hover,
+.pageContainer.dark .searchBar input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    box-shadow: inset 0 0 0 1000px #1e1e1e;
+    background-color: #1e1e1e !important;
+}
+/* === NO GAMES === */
+.noGames {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+    margin: 40px 0;
+}
+
+.pageContainer.dark .noGames {
+    color: #aaa;
 }
