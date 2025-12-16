@@ -3,14 +3,12 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import type { CartItem } from '@shared/types';
 import { translations } from '@shared/lib/i18n';
 import { CartItemComponent } from './CartItem';
-import { PaymentModal } from '../../../components/PaymentModal';
+import { PaymentModal } from '../../../components';
 import styles from './styles.module.css';
-
-type Country = {
-    nameKey: string;
-    currency: string;
-    symbol: string;
-};
+import { useAppDispatch, useAppSelector } from '@shared/store/hooks';
+import { setCurrency } from '@features/Currency/model/currencySlice';
+import { COUNTRIES } from '@shared/const/countries';
+import { rtkApi } from '@shared/api/rtkApi';
 
 interface CartProps {
     isOpen: boolean;
@@ -35,22 +33,11 @@ export const Cart = ({
                          language = 'en',
                          isDarkMode = false,
                      }: CartProps) => {
-    const countries: Country[] = [
-        { nameKey: 'ukraine', currency: 'UAH', symbol: '₴' },
-        { nameKey: 'usa', currency: 'USD', symbol: '$' },
-        { nameKey: 'poland', currency: 'PLN', symbol: 'zł' },
-        { nameKey: 'spain', currency: 'EUR', symbol: '€' },
-        { nameKey: 'bulgaria', currency: 'BGN', symbol: 'лв' },
-        { nameKey: 'germany', currency: 'EUR', symbol: '€' },
-        { nameKey: 'france', currency: 'EUR', symbol: '€' },
-        { nameKey: 'italy', currency: 'EUR', symbol: '€' },
-        { nameKey: 'czechRepublic', currency: 'CZK', symbol: 'Kč' },
-        { nameKey: 'romania', currency: 'RON', symbol: 'lei' },
-    ];
-
-    const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+    const dispatch = useAppDispatch();
+    const selectedCountry = useAppSelector(state => state.currency.selectedCountry);
+    const { data: userProfile } = rtkApi.useGetUserProfileQuery();
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-    const [bonusInput, setBonusInput] = useState('');
+    const [bonusPointsUsed, setBonusPointsUsed] = useState(0);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     const t = translations[language];
@@ -73,18 +60,32 @@ export const Cart = ({
     };
 
     const calculateTotal = (): number => {
-        return items.reduce((sum, item) => {
+        const totalUah = items.reduce((sum, item) => {
             const price = getPrice(item.game);
             return sum + price * item.quantity;
         }, 0);
+        return totalUah * selectedCountry.rate;
     };
 
     const total = calculateTotal();
-    const bonuses = Math.floor(total * 0.1);
+    
+    // Calculate total after bonus deduction
+    // 1 bonus point = 0.01 UAH (assuming 100 points = 1 UAH for simplicity, or adjust logic as needed)
+    // Let's assume 1 bonus point = 1 unit of currency for now, or use a conversion rate.
+    // Based on backend logic "bonusPoints = (int)Math.Floor(amountInUah * 0.1m)", 1 UAH spent gives 0.1 points.
+    // Usually 1 point = 1 unit of currency in redemption or a specific ratio.
+    // Let's assume 1 Bonus Point = 1 UAH discount.
+    const discountFromBonuses = bonusPointsUsed * selectedCountry.rate; 
+    const finalTotal = Math.max(0, total - discountFromBonuses);
+    
+    const formattedTotal = total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const formattedFinalTotal = finalTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    
+    const bonuses = Math.floor((finalTotal / selectedCountry.rate) * 0.1); // Bonuses calculated on paid amount
 
     const handleGoToPayment = () => {
         if (items.length === 0) return;
-        console.log('Opening payment modal...', { total, items });
+        console.log('Opening payment modal...', { total: finalTotal, items, bonusPointsUsed });
         setShowPaymentModal(true);
     };
 
@@ -129,6 +130,7 @@ export const Cart = ({
                                         language={language}
                                         isDarkMode={isDarkMode}
                                         currencySymbol={selectedCountry.symbol}
+                                        exchangeRate={selectedCountry.rate}
                                         onUpdateQuantity={onUpdateQuantity}
                                         onRemoveItem={onRemoveItem}
                                         onToggleAccountType={onToggleAccountType}
@@ -157,12 +159,12 @@ export const Cart = ({
                                 </button>
                                 {showCountryDropdown && (
                                     <div className={`${styles.countryDropdown} ${styles.visible}`}>
-                                        {countries.map(country => (
+                                        {COUNTRIES.map(country => (
                                             <button
                                                 key={country.nameKey}
                                                 className={styles.countryOption}
                                                 onClick={() => {
-                                                    setSelectedCountry(country);
+                                                    dispatch(setCurrency(country));
                                                     setShowCountryDropdown(false);
                                                 }}
                                             >
@@ -177,28 +179,51 @@ export const Cart = ({
                         <div className={styles.totalRow}>
                             <span>{cart.total}</span>
                             <span className={styles.totalPrice}>
-                                {total} {selectedCountry.symbol}
+                                {formattedTotal} {selectedCountry.symbol}
                             </span>
                         </div>
 
                         <div className={styles.bonusSection}>
                             <h3>{cart.bonusesLuden}</h3>
-                            <input
-                                type="text"
-                                placeholder={cart.useAvailableBonuses}
-                                value={bonusInput}
-                                onChange={e => setBonusInput(e.target.value)}
-                                className={styles.bonusInput}
-                            />
-                            <button className={styles.applyBtn}>{cart.apply}</button>
+                            {userProfile ? (
+                                <div className={styles.bonusControl}>
+                                    <div className={styles.bonusInfo}>
+                                        <span>{cart.available}: {userProfile.bonusPoints}</span>
+                                        <span>{cart.used}: {bonusPointsUsed}</span>
+                                    </div>
+                                    <div className={styles.sliderContainer}>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max={Math.min(userProfile.bonusPoints, Math.floor(total / selectedCountry.rate))} 
+                                            value={bonusPointsUsed}
+                                            onChange={e => setBonusPointsUsed(parseInt(e.target.value))}
+                                            className={styles.bonusSlider}
+                                        />
+                                        <div 
+                                            className={styles.sliderFill} 
+                                            style={{ width: `${(bonusPointsUsed / Math.min(userProfile.bonusPoints, Math.floor(total / selectedCountry.rate))) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p>{cart.loginToUseBonuses || 'Login to use bonuses'}</p>
+                            )}
                         </div>
 
                         <div className={styles.finalTotal}>
                             <div className={styles.finalRow}>
                                 <span>{cart.totalAmount}</span>
-                                <span className={styles.finalPrice}>
-                                    {total} {selectedCountry.symbol}
-                                </span>
+                                <div className={styles.priceColumn}>
+                                    {bonusPointsUsed > 0 && (
+                                        <span className={styles.originalPrice}>
+                                            {formattedTotal} {selectedCountry.symbol}
+                                        </span>
+                                    )}
+                                    <span className={styles.finalPrice}>
+                                        {formattedFinalTotal} {selectedCountry.symbol}
+                                    </span>
+                                </div>
                             </div>
                             <div className={styles.rewardRow}>
                                 <span>
@@ -225,9 +250,10 @@ export const Cart = ({
                     console.log('Closing payment modal');
                     setShowPaymentModal(false);
                 }}
-                totalAmount={total}
+                totalAmount={finalTotal}
                 currency={selectedCountry.currency}
                 currencySymbol={selectedCountry.symbol}
+                bonusPointsUsed={bonusPointsUsed}
                 cartItems={items.map(item => ({
                     productId: item.game.id,
                     quantity: item.quantity,

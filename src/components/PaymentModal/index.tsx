@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MdClose } from 'react-icons/md';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import PaymentService from '../../services/PaymentService';
 import BillService from '../../services/BillService';
-import styles from './styles.module.css';
+import { Loader } from '@shared/ui';
+import styles from './PaymentModal.module.css';
 
 // Замените на ваш публичный ключ Stripe (Publishable key из Stripe Dashboard)
 const STRIPE_PUBLIC_KEY = 'pk_test_51SYPe5AZDP0okACh2KaRucLJiQLCkkxkSOCXrfJEek66DZ9RQbkCeLouIBi8Z4yWTHVn07graxujBZCRw4m5r0bh00r5yAKjjS';
@@ -17,6 +18,7 @@ interface PaymentModalProps {
     totalAmount: number;
     currency: string;
     currencySymbol: string;
+    bonusPointsUsed?: number;
     cartItems: Array<{
         productId: number;
         quantity: number;
@@ -31,6 +33,7 @@ interface PaymentFormProps {
     totalAmount: number;
     currency: string;
     currencySymbol: string;
+    bonusPointsUsed?: number;
     cartItems: PaymentModalProps['cartItems'];
     onClose: () => void;
     onPaymentSuccess: () => void;
@@ -40,7 +43,10 @@ interface PaymentFormProps {
 
 const PaymentForm = ({
     totalAmount,
+    currency,
     currencySymbol,
+    bonusPointsUsed = 0,
+    cartItems,
     onClose,
     onPaymentSuccess,
     language,
@@ -51,6 +57,7 @@ const PaymentForm = ({
     const [error, setError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const initializationStarted = useRef(false);
 
     const t = language === 'uk' ? {
         orderSummary: 'Деталі замовлення',
@@ -75,6 +82,9 @@ const PaymentForm = ({
     };
 
     useEffect(() => {
+        if (initializationStarted.current) return;
+        initializationStarted.current = true;
+
         const createBillAndPaymentIntent = async () => {
             try {
                 setProcessing(true);
@@ -86,15 +96,41 @@ const PaymentForm = ({
                     throw new Error('User not authenticated');
                 }
 
-                // Декодируем токен для получения userId
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const userId = parseInt(payload.Id || payload.sub || payload.id);
+                console.log('Raw token:', token);
+                
+                let userId: number;
+                try {
+                    const parts = token.split('.');
+                    console.log('Token parts count:', parts.length);
+                    if (parts.length !== 3) {
+                        throw new Error('Invalid token format');
+                    }
+                    
+                    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                    while (base64.length % 4) {
+                        base64 += '=';
+                    }
+                    
+                    const payload = JSON.parse(atob(base64));
+                    console.log('Token Payload:', payload);
+                    userId = parseInt(payload.Id || payload.sub || payload.id);
+                    console.log('Parsed UserID:', userId);
+                    if (isNaN(userId)) {
+                        throw new Error('Invalid user ID in token');
+                    }
+                } catch (decodeError) {
+                    console.error('Token decode error:', decodeError);
+                    throw new Error('Failed to decode authentication token');
+                }
 
                 // Создаем счет
                 const bill = await BillService.createBill({
                     userId,
                     totalAmount,
                     status: 'Pending',
+                    currency: currency || 'UAH',
+                    bonusPointsUsed,
+                    items: cartItems,
                 });
 
                 if (!bill) {
@@ -170,8 +206,24 @@ const PaymentForm = ({
     if (!clientSecret) {
         return (
             <div className={styles.loading}>
-                <div className={styles.spinner}></div>
-                <p>{t.creatingOrder}</p>
+                {error ? (
+                    <div className={`${styles.errorMessage} ${isDarkMode ? styles.dark : ''}`}>
+                        <p>{error}</p>
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className={styles.cancelButton}
+                            style={{ marginTop: '16px' }}
+                        >
+                            {t.cancel}
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <Loader size="medium" />
+                        <p>{t.creatingOrder}</p>
+                    </>
+                )}
             </div>
         );
     }
@@ -244,6 +296,7 @@ export const PaymentModal = ({
     totalAmount,
     currency,
     currencySymbol,
+    bonusPointsUsed = 0,
     cartItems,
     onPaymentSuccess,
     language = 'en',
@@ -276,6 +329,7 @@ export const PaymentModal = ({
                         totalAmount={totalAmount}
                         currency={currency}
                         currencySymbol={currencySymbol}
+                        bonusPointsUsed={bonusPointsUsed}
                         cartItems={cartItems}
                         onClose={onClose}
                         onPaymentSuccess={onPaymentSuccess}

@@ -2,17 +2,19 @@ import type { BillDto } from '@shared/types';
 import styles from './styles.module.css';
 import { useTheme } from '@app/providers';
 import { useTranslation } from '@shared/lib';
+import { MdDelete } from 'react-icons/md';
 
 interface BillCardProps {
     bill: BillDto;
+    onDelete?: (id: number) => void;
 }
 
-export const BillCard = ({ bill }: BillCardProps) => {
+export const BillCard = ({ bill, onDelete }: BillCardProps) => {
     const { isDarkMode } = useTheme();
     const { t } = useTranslation(); // ← ГЛОБАЛЬНИЙ ПЕРЕКЛАД
 
     const getStatusColors = () => {
-        const status = bill.status;
+        const status = bill.status || 'Unknown';
         const isSuccess = status === 'Paid' || status === 'Completed';
         const isWarning = status === 'Pending';
         const isError = status === 'Cancelled' || status === 'Refunded';
@@ -37,7 +39,8 @@ export const BillCard = ({ bill }: BillCardProps) => {
         });
 
     // ← ПЕРЕКЛАД СТАТУСУ
-    const translatedStatus = t(`billStatus.${bill.status.toLowerCase()}`) || bill.status;
+    const statusKey = bill.status ? bill.status.toLowerCase() : 'unknown';
+    const translatedStatus = t(`billStatus.${statusKey}`) || bill.status || 'Unknown';
 
     return (
         <div
@@ -69,6 +72,21 @@ export const BillCard = ({ bill }: BillCardProps) => {
                 <div className={styles.date} style={{ color: isDarkMode ? '#aaa' : '#999' }}>
                     {formatDate(bill.updatedAt)}
                 </div>
+            )}
+
+            {onDelete && bill.status !== 'Paid' && bill.status !== 'Completed' && (
+                <button 
+                    className={styles.deleteBtn}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(t('confirmDeleteBill') || 'Are you sure you want to delete this bill?')) {
+                            onDelete(bill.id);
+                        }
+                    }}
+                    title={t('deleteBill') || 'Delete Bill'}
+                >
+                    <MdDelete />
+                </button>
             )}
         </div>
     );

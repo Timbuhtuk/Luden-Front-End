@@ -124,26 +124,29 @@ export const uk = {
   },
 
   // Cart
-  cart: {
-    shoppingCart: 'Кошик',
-    continueShopping: 'Продовжити покупки',
-    forMyAccount: 'Для мого акаунту',
-    forGift: 'У подарунок',
-    country: 'Країна',
-    total: 'Всього:',
-    bonusesLuden: 'Бонуси Luden',
-    useAvailableBonuses: 'Використати доступні бонуси',
-    apply: 'Застосувати',
-    totalAmount: 'Загальна сума:',
-    reward: 'Винагорода:',
-    bonusesLudenReward: 'Бонусів Luden',
-    goToPayment: 'Перейти до оплати',
-    emptyCart: 'Ваш кошик порожній',
-    clearCart: 'Очистити кошик',
-    deleteItem: 'Видалити елемент',
-    quantityPlus: '+',
-    quantityMinus: '-',
-  },
+    cart: {
+        shoppingCart: 'Кошик',
+        continueShopping: 'Продовжити покупки',
+        forMyAccount: 'Для мого акаунту',
+        forGift: 'У подарунок',
+        country: 'Країна',
+        total: 'Всього:',
+        bonusesLuden: 'Бонуси Luden',
+        available: 'Доступно',
+        used: 'Використано',
+        loginToUseBonuses: 'Увійдіть, щоб використовувати бонуси',
+        useAvailableBonuses: 'Використати доступні бонуси',
+        apply: 'Застосувати',
+        totalAmount: 'Загальна сума:',
+        reward: 'Винагорода:',
+        bonusesLudenReward: 'Бонусів Luden',
+        goToPayment: 'Перейти до оплати',
+        emptyCart: 'Ваш кошик порожній',
+        clearCart: 'Очистити кошик',
+        deleteItem: 'Видалити елемент',
+        quantityPlus: '+',
+        quantityMinus: '-',
+    },
 
   // Countries
   countries: {
@@ -181,13 +184,32 @@ export const uk = {
   // Genres
   genres: {
     openWorld: 'Відкритий світ',
-    rpg: 'RPG',
+    rpg: 'Рольова гра',
     action: 'Екшн',
     shooter: 'Шутер',
     indie: 'Інді',
     strategy: 'Стратегія',
     horror: 'Жахи',
     racing: 'Гонки',
+    adventure: 'Пригоди',
+    simulation: 'Симулятори',
+    sports: 'Спорт',
+    puzzle: 'Головоломки',
+    fighting: 'Файтинги',
+    arcade: 'Аркади',
+    platformer: 'Платформери',
+    mmo: 'ММО',
+    fps: 'Шутер від першої особи',
+    battleroyale: 'Королівська битва',
+  },
+
+  // Sorting
+  sort: {
+    sortBy: 'Сортувати за',
+    priceLowToHigh: 'Ціна: від низької',
+    priceHighToLow: 'Ціна: від високої',
+    nameAZ: 'Назва: А-Я',
+    nameZA: 'Назва: Я-А',
   },
 
   // Aria Labels
@@ -198,5 +220,11 @@ export const uk = {
     toggleTheme: 'Перемкнути тему',
     shoppingCart: 'Кошик покупок',
     toggleLanguage: 'Змінити мову',
+  },
+
+  // Game Details
+  gameDetails: {
+    developer: 'Розробник',
+    publisher: 'Видавець',
   },
 } as const;

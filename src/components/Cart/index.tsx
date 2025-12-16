@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MdDelete, MdKeyboardArrowDown } from 'react-icons/md';
 import type { CartItem } from '../../models';
-import { translations } from '../../locales';
+import { translations } from '@shared/lib/i18n';
 import { PaymentModal } from '../PaymentModal';
 import styles from './styles.module.css';
 

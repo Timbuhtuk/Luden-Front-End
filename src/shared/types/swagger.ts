@@ -48,6 +48,11 @@ export interface ProductDto {
   coverUrl?: string | null;
   files?: ProductFileDto[] | null;
   licenses?: License[] | null;
+  discountPercentage?: number;
+  developer?: string;
+  publisher?: string;
+  category?: string;
+  releaseDate?: string;
 }
 
 export interface CreateProductDto {
@@ -69,6 +74,7 @@ export interface UpdateProductDto {
 export interface BillDto {
   id: number;
   createdAt: string;
+  updatedAt?: string | null;
   totalAmount: number;
   status: string | null;
   billItems?: BillItemDto[] | null;
@@ -85,6 +91,9 @@ export interface BillCreateDto {
   userId: number;
   totalAmount: number;
   status: BillStatus;
+  currency?: string | null;
+  bonusPointsUsed?: number;
+  items?: Array<{ productId: number; quantity: number; price: number }> | null;
 }
 
 export interface BillUpdateDto {

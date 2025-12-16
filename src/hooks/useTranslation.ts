@@ -1,5 +1,5 @@
 import { useLanguageContext } from '../context/LanguageContext';
-import { translations } from '../locales';
+import { translations } from '@shared/lib/i18n';
 
 /**
  * Hook for accessing translations in components

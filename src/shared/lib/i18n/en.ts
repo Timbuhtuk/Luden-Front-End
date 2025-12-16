@@ -124,26 +124,29 @@ export const en = {
   },
 
   // Cart
-  cart: {
-    shoppingCart: 'Shopping cart',
-    continueShopping: 'Continue shopping',
-    forMyAccount: 'For my account',
-    forGift: 'For gift',
-    country: 'Country',
-    total: 'Total:',
-    bonusesLuden: 'Bonuses Luden',
-    useAvailableBonuses: 'Use available bonuses',
-    apply: 'Apply',
-    totalAmount: 'Total amount:',
-    reward: 'Reward:',
-    bonusesLudenReward: 'Bonuses Luden',
-    goToPayment: 'Go to payment',
-    emptyCart: 'Your cart is empty',
-    clearCart: 'Clear cart',
-    deleteItem: 'Delete item',
-    quantityPlus: '+',
-    quantityMinus: '-',
-  },
+    cart: {
+        shoppingCart: 'Shopping cart',
+        continueShopping: 'Continue shopping',
+        forMyAccount: 'For my account',
+        forGift: 'For gift',
+        country: 'Country',
+        total: 'Total:',
+        bonusesLuden: 'Bonuses Luden',
+        available: 'Available',
+        used: 'Used',
+        loginToUseBonuses: 'Login to use bonuses',
+        useAvailableBonuses: 'Use available bonuses',
+        apply: 'Apply',
+        totalAmount: 'Total amount:',
+        reward: 'Reward:',
+        bonusesLudenReward: 'Bonuses Luden',
+        goToPayment: 'Go to payment',
+        emptyCart: 'Your cart is empty',
+        clearCart: 'Clear cart',
+        deleteItem: 'Delete item',
+        quantityPlus: '+',
+        quantityMinus: '-',
+    },
 
   // Countries
   countries: {
@@ -188,6 +191,25 @@ export const en = {
     strategy: 'Strategy',
     horror: 'Horror',
     racing: 'Racing',
+    adventure: 'Adventure',
+    simulation: 'Simulation',
+    sports: 'Sports',
+    puzzle: 'Puzzle',
+    fighting: 'Fighting',
+    arcade: 'Arcade',
+    platformer: 'Platformer',
+    mmo: 'MMO',
+    fps: 'FPS',
+    battleroyale: 'Battle Royale',
+  },
+
+  // Sorting
+  sort: {
+    sortBy: 'Sort by',
+    priceLowToHigh: 'Price: Low to High',
+    priceHighToLow: 'Price: High to Low',
+    nameAZ: 'Name: A-Z',
+    nameZA: 'Name: Z-A',
   },
 
   // Aria Labels
@@ -198,6 +220,12 @@ export const en = {
     toggleTheme: 'Toggle theme',
     shoppingCart: 'Shopping cart',
     toggleLanguage: 'Toggle language',
+  },
+
+  // Game Details
+  gameDetails: {
+    developer: 'Developer',
+    publisher: 'Publisher',
   },
 } as const;
 

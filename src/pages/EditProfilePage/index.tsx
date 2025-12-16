@@ -12,8 +12,8 @@ interface User {
     email: string;
     role: string;
     createdAt: string;
-    updatedAt?: string;
-    avatarUrl?: string;
+    updatedAt?: string | null;
+    avatarUrl?: string | null;
 }
 
 export const EditProfilePage = () => {

@@ -1,5 +1,4 @@
-﻿// src/services/BaseService.ts
-const API_BASE_URL = '/api'; // запросы пойдут через прокси на http://localhost:5195/api
+﻿import { API_BASE_URL } from '@shared/config';
 
 class BaseService {
     static noAuth = [

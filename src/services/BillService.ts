@@ -19,7 +19,14 @@ class BillService extends BaseService {
     /**
      * Создание нового счета
      */
-    async createBill(data: { userId: number; totalAmount: number; status: string }) {
+    async createBill(data: { 
+        userId: number; 
+        totalAmount: number; 
+        status: string; 
+        currency?: string; 
+        bonusPointsUsed?: number;
+        items?: Array<{ productId: number; quantity: number; price: number }>;
+    }) {
         return this.request<Bill>('/bill', {
             method: 'POST',
             body: JSON.stringify(data),

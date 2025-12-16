@@ -1,0 +1,254 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modalContent {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.modalContent.dark {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+
+.closeButton {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s ease;
+}
+
+.closeButton:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.closeButton svg {
+    font-size: 24px;
+    color: #ffffff;
+}
+
+.modalBody {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+}
+
+.imageSection {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0a0a0a;
+}
+
+.productImage {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+    display: block;
+}
+
+.infoSection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.productName {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    color: #000;
+}
+
+.modalContent.dark .productName {
+    color: #ffffff;
+}
+
+.description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+}
+
+.modalContent.dark .description {
+    color: #aaa;
+}
+
+.licensesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sectionTitle {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    color: #000;
+}
+
+.modalContent.dark .sectionTitle {
+    color: #ffffff;
+}
+
+.licenseCard {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modalContent.dark .licenseCard {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+}
+
+.licenseHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.licenseStatus {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #4CAF50;
+    color: white;
+}
+
+.licenseKeyContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.modalContent.dark .licenseKeyContainer {
+    background: #1a1a1a;
+}
+
+.licenseKey {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #4CAF50;
+    letter-spacing: 2px;
+    user-select: all;
+}
+
+.copyButton {
+    background: #4CAF50;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.copyButton:hover {
+    background: #45a049;
+}
+
+.copyButton svg {
+    font-size: 20px;
+    color: white;
+}
+
+.expiryInfo {
+    font-size: 13px;
+    color: #888;
+}
+
+.metadata {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.modalContent.dark .metadata {
+    border-top-color: #3a3a3a;
+}
+
+.metadataItem {
+    display: flex;
+    gap: 8px;
+}
+
+.metadataLabel {
+    font-weight: 600;
+    color: #666;
+    min-width: 120px;
+}
+
+.modalContent.dark .metadataLabel {
+    color: #aaa;
+}
+
+.metadataValue {
+    color: #000;
+}
+
+.modalContent.dark .metadataValue {
+    color: #ffffff;
+}
+
+@media (min-width: 768px) {
+    .modalBody {
+        flex-direction: row;
+    }
+
+    .imageSection {
+        width: 40%;
+        flex-shrink: 0;
+    }
+
+    .infoSection {
+        flex: 1;
+    }
+}
+

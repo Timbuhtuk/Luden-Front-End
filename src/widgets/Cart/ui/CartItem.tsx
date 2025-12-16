@@ -10,6 +10,7 @@ interface CartItemProps {
     language: 'en' | 'uk';
     isDarkMode: boolean;
     currencySymbol: string;
+    exchangeRate?: number;
     onUpdateQuantity: (gameId: number, quantity: number) => void;
     onRemoveItem: (gameId: number) => void;
     onToggleAccountType: (gameId: number) => void;
@@ -20,6 +21,7 @@ export const CartItemComponent = ({
     language,
     isDarkMode,
     currencySymbol,
+    exchangeRate = 1,
     onUpdateQuantity,
     onRemoveItem,
     onToggleAccountType,
@@ -75,7 +77,7 @@ export const CartItemComponent = ({
                         </button>
                     </div>
                     <span className={styles.itemPrice}>
-                        {formatPrice(item.game, currencySymbol)}
+                        {formatPrice(item.game, currencySymbol, exchangeRate)}
                     </span>
                 </div>
             </div>
@@ -91,7 +93,7 @@ export const CartItemComponent = ({
 };
 
 // Вспомогательная функция для форматирования цены
-const formatPrice = (game: { price?: string; priceValue?: number }, currencySymbol: string): string => {
+const formatPrice = (game: { price?: string; priceValue?: number }, currencySymbol: string, exchangeRate: number): string => {
     const getPrice = (game: { price?: string; priceValue?: number }): number => {
         if (game.priceValue !== undefined && game.priceValue !== null) {
             return game.priceValue;
@@ -102,7 +104,14 @@ const formatPrice = (game: { price?: string; priceValue?: number }, currencySymb
         return isNaN(price) ? 0 : price;
     };
     
-    const price = getPrice(game);
-    return `${price.toLocaleString()} ${currencySymbol}`;
+    const priceInUah = getPrice(game);
+    const convertedPrice = priceInUah * exchangeRate;
+    
+    // Format based on whether it's an integer or float
+    // For integer-like results (e.g. UAH), usually no decimals if round.
+    // For USD/EUR usually 2 decimals.
+    // Let's use standard locale string with decimals if needed.
+    
+    return `${convertedPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencySymbol}`;
 };
 

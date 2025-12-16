@@ -1,23 +1,12 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-
-interface ThemeContextType {
-    isDarkMode: boolean;
-    toggleDarkMode: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+import { useAppSelector, useAppDispatch } from '@shared/store/hooks';
+import { toggleTheme } from '@features/Theme/model/themeSlice';
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-    const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-        // Читаем из localStorage при инициализации
-        const saved = localStorage.getItem('darkMode');
-        return saved === 'true';
-    });
+    const isDarkMode = useAppSelector((state) => state.theme.isDarkMode);
 
     useEffect(() => {
-        // Сохраняем в localStorage при изменении
-        localStorage.setItem('darkMode', String(isDarkMode));
         // Добавляем/удаляем класс на body
         if (isDarkMode) {
             document.body.classList.add('dark');
@@ -26,22 +15,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [isDarkMode]);
 
-    const toggleDarkMode = () => {
-        setIsDarkMode(prev => !prev);
-    };
-
-    return (
-        <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
-            {children}
-        </ThemeContext.Provider>
-    );
+    return <>{children}</>;
 };
 
 export const useTheme = () => {
-    const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within ThemeProvider');
-    }
-    return context;
-};
+    const dispatch = useAppDispatch();
+    const isDarkMode = useAppSelector((state) => state.theme.isDarkMode);
 
+    const toggleDarkMode = () => {
+        dispatch(toggleTheme());
+    };
+
+    return { isDarkMode, toggleDarkMode };
+};

@@ -11,9 +11,21 @@ interface GameCardProps {
     onAddToCart?: (game: Game) => void;
     isDarkMode?: boolean;
     noHover?: boolean;
+    onClick?: () => void;
+    currencySymbol?: string;
+    exchangeRate?: number;
 }
 
-export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = false, noHover = false }: GameCardProps) => {
+export const GameCard = ({ 
+    game, 
+    onToggleFavorite, 
+    onAddToCart, 
+    isDarkMode = false, 
+    noHover = false, 
+    onClick,
+    currencySymbol = '€',
+    exchangeRate = 1
+}: GameCardProps) => {
     const { t } = useTranslation();
     const [imageError, setImageError] = useState(false);
     
@@ -25,31 +37,28 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
     };
 
     const discountPercent = game.discountPercent;
-    const priceStr = game.price ?? '';
-    const originalPriceStr = priceStr.split(' (was')[0].replace(/[^\d]/g, '');
-    const originalPrice = originalPriceStr ? parseInt(originalPriceStr, 10) : null;
+    // Get price from priceValue if available, otherwise parse string
+    const originalPrice = game.priceValue ?? (game.price ? parseInt(game.price.replace(/[^\d]/g, ''), 10) : null);
 
     const currentPrice = discountPercent !== null && originalPrice !== null
         ? Math.round(originalPrice * (1 - discountPercent / 100))
         : originalPrice;
 
-    const displayPrice = currentPrice !== null
-        ? `${currentPrice.toLocaleString()} €`
+    // Apply exchange rate
+    const finalPrice = currentPrice !== null 
+        ? currentPrice * exchangeRate 
+        : null;
+
+    const displayPrice = finalPrice !== null
+        ? `${finalPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencySymbol}`
         : '—';
 
-    // ← ВИПРАВЛЕНО: Нормалізація ключа жанру
-    const getGenreKey = (genre: string): string => {
-        const normalized = genre
-            .toLowerCase()
-            .trim()
-            .replace(/\s+/g, ''); // "open world" → "openworld"
-        return normalized === 'openworld' ? 'openWorld' : normalized;
-    };
-
-    const translatedGenre = game.genre ? t(`genres.${getGenreKey(game.genre)}`) : '';
-
     return (
-        <div className={`${styles.gameCard} ${isDarkMode ? styles.dark : ''} ${noHover ? styles.noHover : ''}`}>
+        <div 
+            className={`${styles.gameCard} ${isDarkMode ? styles.dark : ''} ${noHover ? styles.noHover : ''}`}
+            onClick={onClick}
+            style={{ cursor: onClick ? 'pointer' : 'default' }}
+        >
             <div className={styles.gameImageWrapper}>
                 <img 
                     src={getImageSrc()} 
@@ -78,7 +87,6 @@ export const GameCard = ({ game, onToggleFavorite, onAddToCart, isDarkMode = fal
 
                 <div className={styles.infoPanel}>
                     <span className={styles.price}>{displayPrice}</span>
-                    {game.genre && <span className={styles.genre}>{translatedGenre}</span>}
                 </div>
 
                 {onAddToCart && (

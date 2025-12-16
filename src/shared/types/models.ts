@@ -9,6 +9,8 @@ export interface Game {
     genre?: string;
     isFavorite?: boolean;
     discountPercent: number | null;
+    developer?: string;
+    publisher?: string;
 }
 
 export interface CartItem {

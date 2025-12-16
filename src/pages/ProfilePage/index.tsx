@@ -26,12 +26,15 @@ import type { BillDto, ProductDto } from '@shared/types';
 import type { Game } from '@shared/types';
 import { useGetUserProfileQuery, useGetUserBillsQuery, useGetUserProductsQuery, useUpdateUserMutation } from '@entities/User';
 import { useLoginMutation } from '@features/auth';
-import { BillCard, ProductCard, GameCard } from '@shared/ui';
+import { BillCard, ProductCard, GameCard, Loader } from '@shared/ui';
 import { useRemoveFavoriteMutation } from '@entities/Favorite';
 import { useTheme } from '@app/providers';
 import { useGetFavoritesQuery } from '@entities/Favorite';
-import { API_BASE_URL, API_ENDPOINTS } from '@shared/config';
+import { API_BASE_URL, API_ENDPOINTS, baseDomain } from '@shared/config';
 import { getGamePlaceholder } from '@shared/lib/image-placeholder';
+import { rtkApi } from '@shared/api/rtkApi';
+import { LibraryProductModal } from '../../components/LibraryProductModal';
+import { SwitchAccountModal } from '../../components/SwitchAccountModal';
 
 // Функция для получения URL изображения продукта
 const getProductImageUrl = (product: ProductDto | null | undefined): string => {
@@ -70,17 +73,20 @@ const getProductImageUrl = (product: ProductDto | null | undefined): string => {
     return getGamePlaceholder(product.name || 'Product', false);
 };
 
+import BillService from '../../services/BillService';
+
 export const ProfilePage = () => {
     const { t, setLanguage, language } = useTranslation();
     const navigate = useNavigate();
     const { isDarkMode, toggleDarkMode } = useTheme();
     const { data: profileData, refetch: refetchProfile } = useGetUserProfileQuery();
-    const { data: billsData, isLoading: isLoadingBills } = useGetUserBillsQuery();
+    const { data: billsData, isLoading: isLoadingBills, refetch: refetchBills } = useGetUserBillsQuery();
     const { data: productsData, isLoading: isLoadingProducts } = useGetUserProductsQuery();
     const { data: favoritesData, isLoading: isLoadingFavorites } = useGetFavoritesQuery();
     const [updateUser] = useUpdateUserMutation();
     const [login] = useLoginMutation();
     const [removeFavorite] = useRemoveFavoriteMutation();
+    const dispatch = rtkApi.util.resetApiState;
     
     const [user, setUser] = useState<{ username: string; email: string; role: string; avatar: string } | null>(null);
     const [bills, setBills] = useState<BillDto[]>([]);
@@ -95,6 +101,9 @@ export const ProfilePage = () => {
     const [avatarUrl, setAvatarUrl] = useState<string>('');
     const [avatarVersion, setAvatarVersion] = useState<number>(0);
     const [palette, setPalette] = useState<string[] | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<ProductDto | null>(null);
+    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [isSwitchAccountModalOpen, setIsSwitchAccountModalOpen] = useState(false);
 
     // === Оновлюємо дані з RTK Query ===
     useEffect(() => {
@@ -114,6 +123,17 @@ export const ProfilePage = () => {
             setBills(billsData);
         }
     }, [billsData]);
+
+    const handleDeleteBill = async (id: number) => {
+        try {
+            await BillService.deleteBill(id);
+            setBills(prev => prev.filter(bill => bill.id !== id));
+            refetchBills();
+        } catch (error) {
+            console.error('Error deleting bill:', error);
+            alert(t('errorDeletingBill') || 'Error deleting bill');
+        }
+    };
 
     useEffect(() => {
         if (productsData) {
@@ -221,12 +241,6 @@ export const ProfilePage = () => {
         setIsSwitchAccountOpen(false);
     };
 
-    const handleSwitchAccountToggle = () => {
-        setIsSwitchAccountOpen(!isSwitchAccountOpen);
-        setIsSettingsOpen(false);
-    };
-
-
     const handleAddNewAccount = () => {
         setIsSwitchAccountOpen(false);
         navigate('/registration');
@@ -241,6 +255,8 @@ export const ProfilePage = () => {
         setIsSettingsOpen(false);
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
+        localStorage.removeItem('cartItems');
+        dispatch();
         navigate('/');
     };
 
@@ -259,7 +275,7 @@ export const ProfilePage = () => {
     }, []);
 
     if (!user) {
-        return <div>{t('profile.loading')}</div>; // ← ПЕРЕКЛАД
+        return <Loader fullScreen size="large" />;
     }
 
     return (
@@ -301,7 +317,7 @@ export const ProfilePage = () => {
                         {isDarkMode ? <MdWbSunny /> : <MdNightlight />}
                     </button>
                     <button className={styles.headerButton}><MdOutlineNotifications /></button>
-                    {profileData?.bonusPoints !== undefined && (
+                    {profileData?.bonusPoints !== undefined && profileData?.role !== 'Admin' && (
                         <div className={styles.bonusInfo}>
                             <MdEmojiEvents className={styles.bonusInfoIcon} />
                             <span className={styles.bonusInfoText}>
@@ -318,7 +334,7 @@ export const ProfilePage = () => {
                                 <li className={styles.dropdownItem} onClick={handleEditProfile}>
                                     <MdEdit /> {t('profile.editProfile')} {/* ← ПЕРЕКЛАД */}
                                 </li>
-                                <li className={styles.dropdownItem} onClick={handleSwitchAccountToggle}>
+                                <li className={styles.dropdownItem} onClick={() => setIsSwitchAccountModalOpen(true)}>
                                     <MdSwitchAccount /> {t('profile.switchAccount')} {/* ← ПЕРЕКЛАД */}
                                 </li>
                                 <li className={styles.dropdownItem} onClick={handleLogout}>
@@ -367,116 +383,151 @@ export const ProfilePage = () => {
                     </span>
                 </div>
 
-                <nav className={styles.navigation}>
-                    <button
-                        className={`${styles.navButton} ${activeTab === 'myLibrary' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('myLibrary')}
-                    >
-                        <MdSportsEsports /> {t('profile.myLibrary')} {/* ← ПЕРЕКЛАД */}
-                    </button>
-                    <button
-                        className={`${styles.navButton} ${activeTab === 'bills' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('bills')}
-                    >
-                        <MdCardGiftcard /> {t('profile.bills')} {/* ← ПЕРЕКЛАД */}
-                    </button>
-                    <button
-                        className={`${styles.navButton} ${activeTab === 'favorites' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('favorites')}
-                    >
-                        <MdStar /> {t('profile.favorites')} {/* ← ПЕРЕКЛАД */}
-                    </button>
-                </nav>
+                {profileData?.role !== 'Admin' && (
+                    <>
+                        <nav className={styles.navigation}>
+                            <button
+                                className={`${styles.navButton} ${activeTab === 'myLibrary' ? styles.active : ''}`}
+                                onClick={() => setActiveTab('myLibrary')}
+                            >
+                                <MdSportsEsports /> {t('profile.myLibrary')} {/* ← ПЕРЕКЛАД */}
+                            </button>
+                            <button
+                                className={`${styles.navButton} ${activeTab === 'bills' ? styles.active : ''}`}
+                                onClick={() => setActiveTab('bills')}
+                            >
+                                <MdCardGiftcard /> {t('profile.bills')} {/* ← ПЕРЕКЛАД */}
+                            </button>
+                            <button
+                                className={`${styles.navButton} ${activeTab === 'favorites' ? styles.active : ''}`}
+                                onClick={() => setActiveTab('favorites')}
+                            >
+                                <MdStar /> {t('profile.favorites')} {/* ← ПЕРЕКЛАД */}
+                            </button>
+                        </nav>
 
-                <div className={styles.contentArea}>
-                    {activeTab === 'myLibrary' && (
-                        <div className={styles.gameGrid}>
-                            {isLoadingProducts ? (
-                                <div className={styles.emptyState}>
-                                    <MdSportsEsports className={styles.emptyIcon} />
-                                    <p>{t('loading') || 'Loading...'}</p>
-                                </div>
-                            ) : products.length === 0 ? (
-                                <div className={styles.emptyState}>
-                                    <MdSportsEsports className={styles.emptyIcon} />
-                                    <p>{t('profile.noGamesInLibrary')}</p>
-                                    <p className={styles.emptyHint}>{t('profile.purchaseGames')}</p>
-                                </div>
-                            ) : (
-                                products.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))
-                            )}
-                        </div>
-                    )}
-                    {activeTab === 'bills' && (
-                        <div className={styles.gameGrid}>
-                            {isLoadingBills ? (
-                                <div className={styles.emptyState}>
-                                    <MdCardGiftcard className={styles.emptyIcon} />
-                                    <p>{t('loading') || 'Loading...'}</p>
-                                </div>
-                            ) : bills.length === 0 ? (
-                                <div className={styles.emptyState}>
-                                    <MdCardGiftcard className={styles.emptyIcon} />
-                                    <p>{t('profile.noBills')}</p>
-                                    <p className={styles.emptyHint}>{t('profile.browseStore')}</p>
-                                </div>
-                            ) : (
-                                bills.map((bill) => (
-                                    <BillCard key={bill.id} bill={bill} />
-                                ))
-                            )}
-                        </div>
-                    )}
-                    {activeTab === 'favorites' && (
-                        <div className={styles.gameGrid}>
-                            {isLoadingFavorites ? (
-                                <div className={styles.emptyState}>
-                                    <MdStar className={styles.emptyIcon} />
-                                    <p>{t('loading') || 'Loading...'}</p>
-                                </div>
-                            ) : !favoritesData || favoritesData.length === 0 ? (
-                                <div className={styles.emptyState}>
-                                    <MdStar className={styles.emptyIcon} />
-                                    <p>{t('profile.noFavorites')}</p>
-                                    <p className={styles.emptyHint}>{t('profile.addToFavorites')}</p>
-                                </div>
-                            ) : (
-                                favoritesData
-                                    .filter(fav => fav.product) // Фильтруем только те, у которых есть продукт
-                                    .map((fav) => {
-                                        const product = fav.product!;
-                                        const game: Game = {
-                                            id: product.id,
-                                            title: product.name || 'Untitled',
-                                            image: getProductImageUrl(product),
-                                            price: `${product.price.toLocaleString()} €`,
-                                            genre: product.region?.name || undefined,
-                                            isFavorite: true,
-                                            discountPercent: null,
-                                        };
-                                        return (
-                                            <GameCard
-                                                key={game.id}
-                                                game={game}
+                        <div className={styles.contentArea}>
+                            {activeTab === 'myLibrary' && (
+                                <div className={styles.gameGrid}>
+                                    {isLoadingProducts ? (
+                                        <div className={styles.emptyState}>
+                                            <Loader size="medium" />
+                                        </div>
+                                    ) : products.length === 0 ? (
+                                        <div className={styles.emptyState}>
+                                            <MdSportsEsports className={styles.emptyIcon} />
+                                            <p>{t('profile.noGamesInLibrary')}</p>
+                                            <p className={styles.emptyHint}>{t('profile.purchaseGames')}</p>
+                                        </div>
+                                    ) : (
+                                        products.map((product) => (
+                                            <ProductCard 
+                                                key={product.id} 
+                                                product={product}
                                                 isDarkMode={isDarkMode}
-                                                noHover={true}
-                                                onToggleFavorite={async (gameId) => {
-                                                    try {
-                                                        await removeFavorite(gameId).unwrap();
-                                                    } catch (error) {
-                                                        console.error('Error removing favorite:', error);
-                                                    }
+                                                onClick={() => {
+                                                    setSelectedProduct(product);
+                                                    setIsProductModalOpen(true);
                                                 }}
                                             />
-                                        );
-                                    })
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                            {activeTab === 'bills' && (
+                                <div className={styles.gameGrid}>
+                                    {isLoadingBills ? (
+                                        <div className={styles.emptyState}>
+                                            <Loader size="medium" />
+                                        </div>
+                                    ) : bills.length === 0 ? (
+                                        <div className={styles.emptyState}>
+                                            <MdCardGiftcard className={styles.emptyIcon} />
+                                            <p>{t('profile.noBills')}</p>
+                                            <p className={styles.emptyHint}>{t('profile.browseStore')}</p>
+                                        </div>
+                                    ) : (
+                                        bills.map((bill) => (
+                                            <BillCard 
+                                                key={bill.id} 
+                                                bill={bill}
+                                                onDelete={handleDeleteBill}
+                                            />
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                            {activeTab === 'favorites' && (
+                                <div className={styles.gameGrid}>
+                                    {isLoadingFavorites ? (
+                                        <div className={styles.emptyState}>
+                                            <Loader size="medium" />
+                                        </div>
+                                    ) : !favoritesData || favoritesData.length === 0 ? (
+                                        <div className={styles.emptyState}>
+                                            <MdStar className={styles.emptyIcon} />
+                                            <p>{t('profile.noFavorites')}</p>
+                                            <p className={styles.emptyHint}>{t('profile.addToFavorites')}</p>
+                                        </div>
+                                    ) : (
+                                        favoritesData
+                                            .filter(fav => fav.product) // Фильтруем только те, у которых есть продукт
+                                            .map((fav) => {
+                                                const product = fav.product!;
+                                                const game: Game = {
+                                                    id: product.id,
+                                                    title: product.name || 'Untitled',
+                                                    image: getProductImageUrl(product),
+                                                    price: `${product.price.toLocaleString()} €`,
+                                                    genre: product.region?.name || undefined,
+                                                    isFavorite: true,
+                                                    discountPercent: null,
+                                                };
+                                                return (
+                                                    <GameCard
+                                                        key={game.id}
+                                                        game={game}
+                                                        isDarkMode={isDarkMode}
+                                                        noHover={true}
+                                                        onToggleFavorite={async (gameId) => {
+                                                            try {
+                                                                await removeFavorite(gameId).unwrap();
+                                                            } catch (error) {
+                                                                console.error('Error removing favorite:', error);
+                                                            }
+                                                        }}
+                                                    />
+                                                );
+                                            })
+                                    )}
+                                </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
             </main>
+
+            {selectedProduct && (
+                <LibraryProductModal
+                    isOpen={isProductModalOpen}
+                    onClose={() => {
+                        setIsProductModalOpen(false);
+                        setSelectedProduct(null);
+                    }}
+                    product={selectedProduct}
+                    isDarkMode={isDarkMode}
+                />
+            )}
+            
+            <SwitchAccountModal 
+                isOpen={isSwitchAccountModalOpen} 
+                onClose={() => setIsSwitchAccountModalOpen(false)}
+                currentBaseUrl={baseDomain}
+                onSave={(newUrl) => {
+                    localStorage.setItem('apiBaseUrl', newUrl);
+                    window.location.reload();
+                }}
+            />
         </div>
     );
 };

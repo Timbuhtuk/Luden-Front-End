@@ -1,6 +1,7 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const storageUrl = localStorage.getItem('apiBaseUrl');
+export const API_BASE_URL = storageUrl || import.meta.env.VITE_API_BASE_URL || '/api';
 
-export const baseDomain = "https://Localhost:5195/api/";
+export const baseDomain = storageUrl || "https://Localhost:5195/api/";
 
 export const API_ENDPOINTS = {
     authorization: {

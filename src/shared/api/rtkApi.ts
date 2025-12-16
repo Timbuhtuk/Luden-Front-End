@@ -71,6 +71,7 @@ export const rtkApi = createApi({
         withAuth: true,
       }),
       providesTags: [{ type: 'User', id: 'PROFILE' }],
+      keepUnusedDataFor: 300, // Cache user profile for 5 minutes
     }),
 
     getUserProfileById: builder.query<UserProfileDTO, number>({
@@ -351,9 +352,9 @@ export const rtkApi = createApi({
         method: 'POST',
         withAuth: true,
       }),
-      invalidatesTags: [
+      invalidatesTags: (_result, _error, productId) => [
         { type: 'Favorite', id: 'LIST' },
-        (_result, _error, productId) => ({ type: 'Favorite', id: `CHECK-${productId}` }),
+        { type: 'Favorite', id: `CHECK-${productId}` },
       ],
     }),
 
@@ -363,9 +364,9 @@ export const rtkApi = createApi({
         method: 'DELETE',
         withAuth: true,
       }),
-      invalidatesTags: [
+      invalidatesTags: (_result, _error, productId) => [
         { type: 'Favorite', id: 'LIST' },
-        (_result, _error, productId) => ({ type: 'Favorite', id: `CHECK-${productId}` }),
+        { type: 'Favorite', id: `CHECK-${productId}` },
       ],
     }),
 

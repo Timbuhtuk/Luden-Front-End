@@ -21,7 +21,7 @@ export function useTranslation() {
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
-    let value: any = translations[language];
+    let value: any = (translations as any)[language];
 
     // Navigate through nested object
     for (const k of keys) {
